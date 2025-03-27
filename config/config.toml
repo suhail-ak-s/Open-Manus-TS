@@ -1,0 +1,25 @@
+# Global LLM configuration
+[llm]
+model = "gpt-4o"
+base_url = "https://api.openai.com/v1"
+api_key = ""  # Will use environment variable OPENAI_API_KEY by default
+max_tokens = 4096
+temperature = 0.0
+
+# Vision model configuration
+[vision]
+model = "gpt-4o"
+base_url = "https://api.openai.com/v1"
+api_key = ""  # Will use environment variable OPENAI_API_KEY by default
+
+# Enhanced logging configuration
+[logging]
+level = "info"  # Use "debug" for even more detailed logs
+pretty = true
+file = false
+file_path = "./logs/openmanus.log"
+
+# Browser configuration
+[browser]
+headless = true
+max_content_length = 5000

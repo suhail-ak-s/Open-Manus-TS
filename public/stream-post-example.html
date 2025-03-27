@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenManus POST-based Streaming Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        textarea,
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #3b78e7;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .log-container {
+            background-color: #f7f9fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 20px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .event {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .event-system {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+
+        .event-agent {
+            background-color: #fff3e0;
+            border-left: 4px solid #ff9800;
+        }
+
+        .event-browser {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+        }
+
+        .event-error {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .event-time {
+            font-size: 11px;
+            color: #666;
+            margin-right: 10px;
+        }
+
+        .event-type {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 11px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            color: white;
+        }
+
+        .event-type-system {
+            background-color: #2196f3;
+        }
+
+        .event-type-agent {
+            background-color: #ff9800;
+        }
+
+        .event-type-browser {
+            background-color: #4caf50;
+        }
+
+        .event-type-error {
+            background-color: #f44336;
+        }
+
+        .event-message {
+            font-weight: 600;
+            display: block;
+            margin: 4px 0;
+        }
+
+        .event-content {
+            margin-top: 5px;
+        }
+
+        .event-details {
+            font-size: 12px;
+            color: #333;
+            max-height: 200px;
+            overflow: auto;
+        }
+
+        .screenshot-container {
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        .screenshot-img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .search-results {
+            margin-top: 10px;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .search-header {
+            padding: 8px 12px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-header .search-icon {
+            margin-right: 8px;
+            color: #4285f4;
+            font-size: 16px;
+        }
+
+        .search-header .search-query {
+            font-weight: 600;
+            flex-grow: 1;
+        }
+
+        .search-result-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .search-result-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-link {
+            display: flex;
+            color: #1a0dab;
+            text-decoration: none;
+            margin-bottom: 4px;
+        }
+
+        .search-result-link:hover {
+            text-decoration: underline;
+        }
+
+        .search-result-favicon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            margin-top: 3px;
+        }
+
+        .search-result-title {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .search-result-url {
+            color: #006621;
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+
+        .search-result-snippet {
+            color: #545454;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .status-connected {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-disconnected {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .status-connecting {
+            background-color: #fff3e0;
+            color: #ef6c00;
+        }
+
+        /* Main layout with memory panel */
+        .page-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .main-content {
+            flex: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .memory-panel {
+            width: 300px;
+            background-color: #f8f9fa;
+            border-left: 1px solid #e1e4e8;
+            padding: 15px;
+            position: fixed;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .memory-section {
+            margin-bottom: 15px;
+            background-color: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .memory-header {
+            padding: 8px 10px;
+            background-color: #f1f8ff;
+            border-bottom: 1px solid #e1e4e8;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .memory-header .badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background-color: #e1e4e8;
+            color: #24292e;
+        }
+
+        .memory-header .badge-active {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .memory-content {
+            padding: 8px 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .memory-key {
+            font-weight: bold;
+            color: #0366d6;
+            margin-bottom: 2px;
+        }
+
+        .memory-value {
+            margin-bottom: 8px;
+            word-break: break-word;
+            white-space: pre-wrap;
+            color: #24292e;
+            font-size: 11px;
+            background-color: #f6f8fa;
+            padding: 4px;
+            border-radius: 2px;
+        }
+
+        .memory-empty {
+            color: #6a737d;
+            font-style: italic;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .memory-access {
+            font-size: 10px;
+            color: #6a737d;
+            margin-top: 2px;
+            text-align: right;
+        }
+
+        .agent-pill {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-right: 4px;
+            color: white;
+        }
+
+        .agent-pill-orchestrator {
+            background-color: #0366d6;
+        }
+
+        .agent-pill-planning {
+            background-color: #6f42c1;
+        }
+
+        .agent-pill-swe {
+            background-color: #e36209;
+        }
+
+        .agent-pill-browser {
+            background-color: #28a745;
+        }
+
+        .agent-pill-terminal {
+            background-color: #d73a49;
+        }
+
+        .agent-pill-purchase {
+            background-color: #6f42c1;
+        }
+
+        .agent-pill-certificate {
+            background-color: #1b7e42;
+        }
+
+        .agent-pill-budget {
+            background-color: #2188ff;
+        }
+
+        .agent-pill-defects {
+            background-color: #cb2431;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-layout">
+        <div class="main-content">
+            <div class="container">
+                <h1>OpenManus POST-based Streaming Demo</h1>
+
+                <div class="input-group">
+                    <label for="session-id">Session ID:</label>
+                    <input type="text" id="session-id" placeholder="Leave blank to generate a random ID">
+                </div>
+
+                <div class="input-group">
+                    <label for="query">Enter your query:</label>
+                    <textarea id="query" placeholder="E.g., Plan a 3-day trip to Paris, France."></textarea>
+                </div>
+
+                <div>
+                    <button id="connect-btn">Connect Stream</button>
+                    <button id="submit-btn" disabled>Submit Query</button>
+                    <button id="disconnect-btn" disabled>Disconnect</button>
+                    <button id="clear-btn">Clear Logs</button>
+                    <span id="connection-status" class="status status-disconnected">Disconnected</span>
+                </div>
+
+                <div id="event-log" class="log-container"></div>
+            </div>
+        </div>
+
+        <div id="memory-panel" class="memory-panel">
+            <h3>Agent Memory</h3>
+
+            <div class="memory-section">
+                <div class="memory-header">
+                    <span>Shared Memory</span>
+                    <span id="shared-memory-badge" class="badge">Inactive</span>
+                </div>
+                <div id="shared-memory" class="memory-content">
+                    <div class="memory-empty">No data available yet</div>
+                </div>
+            </div>
+
+            <div id="private-memories">
+                <!-- Private memory sections will be added dynamically -->
+                <div class="memory-empty">Waiting for agent data...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include the PostEventSource client -->
+    <script src="stream-post-client.js"></script>
+
+    <script>
+        // DOM elements
+        const sessionIdInput = document.getElementById('session-id');
+        const queryInput = document.getElementById('query');
+        const connectBtn = document.getElementById('connect-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const connectionStatus = document.getElementById('connection-status');
+        const eventLog = document.getElementById('event-log');
+
+        // State variables
+        let sessionId = null;
+        let eventSource = null;
+        let isConnected = false;
+
+        // Generate a random session ID
+        function generateSessionId() {
+            return 'session_' + Math.random().toString(36).substring(2, 15);
+        }
+
+        // Update UI based on connection status
+        function updateConnectionUI(status) {
+            isConnected = status === 'connected';
+
+            // Update buttons
+            connectBtn.disabled = isConnected;
+            submitBtn.disabled = !isConnected;
+            disconnectBtn.disabled = !isConnected;
+
+            // Update status display
+            connectionStatus.className = `status status-${status}`;
+            connectionStatus.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+
+        // Log an event to the event log
+        function logEvent(type, message, details = null) {
+            // Create event element
+            const eventEl = document.createElement('div');
+            eventEl.className = `event event-${type}`;
+
+            // Format timestamp
+            const time = new Date().toLocaleTimeString();
+
+            // Check if there's image data in the details
+            let imageHtml = '';
+            if (details && (details.imageData || (details.details && details.details.imageData))) {
+                const imageData = details.imageData || (details.details && details.details.imageData);
+                const url = details.url || (details.details && details.details.url) || '';
+                const pageTitle = details.title || (details.details && details.details.title) || '';
+
+                if (imageData) {
+                    imageHtml = `
+                        <div class="screenshot-container">
+                            <strong>Screenshot:</strong>
+                            ${url ? `<div><strong>URL:</strong> ${url}</div>` : ''}
+                            ${pageTitle ? `<div><strong>Page Title:</strong> ${pageTitle}</div>` : ''}
+                            <img class="screenshot-img" src="${imageData}" alt="Screenshot" />
+                        </div>
+                    `;
+                }
+            }
+
+            // Format details if they exist
+            let detailsHtml = '';
+            if (details) {
+                // Extract search results from various potential sources
+                let searchResults = [];
+                let searchQuery = '';
+
+                // Case 1: Direct results array in details
+                if (details.results && Array.isArray(details.results) && details.results.length > 0) {
+                    searchResults = details.results;
+                    searchQuery = details.query || 'search query';
+                }
+                // Case 2: Web search tool result with search_results
+                else if (details.search_results && Array.isArray(details.search_results) && details.search_results.length > 0) {
+                    searchResults = details.search_results;
+                    searchQuery = details.query || 'search query';
+                }
+                // Case 3: Nested in details object
+                else if (details.details && details.details.results && Array.isArray(details.details.results)) {
+                    searchResults = details.details.results;
+                    searchQuery = details.details.query || 'search query';
+                }
+                // Case 4: Try to extract from fullResult if available
+                else if (details.fullResult && typeof details.fullResult === 'string') {
+                    try {
+                        // Search for JSON_RESULTS comment
+                        const jsonMatch = details.fullResult.match(/<!-- JSON_RESULTS: (.*?) -->/);
+                        if (jsonMatch && jsonMatch[1]) {
+                            const parsedData = JSON.parse(jsonMatch[1]);
+                            if (parsedData.results && Array.isArray(parsedData.results)) {
+                                searchResults = parsedData.results;
+                                searchQuery = parsedData.query || 'search query';
+                            }
+                        }
+
+                        // Try to extract query from text if not found
+                        if (!searchQuery) {
+                            const queryMatch = details.fullResult.match(/Search results for "([^"]+)"/);
+                            if (queryMatch && queryMatch[1]) {
+                                searchQuery = queryMatch[1];
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error extracting search results from fullResult:', e);
+                    }
+                }
+
+                // Format search results if found
+                let searchResultsHtml = '';
+                if (searchResults.length > 0) {
+                    console.log(`Rendering ${searchResults.length} search results`);
+
+                    searchResultsHtml = `
+                        <div class="search-results">
+                            <div class="search-header">
+                                <span class="search-icon">🔍</span>
+                                <span class="search-query">${searchQuery}</span>
+                            </div>
+                            <ul class="search-result-list">
+                    `;
+
+                    searchResults.forEach(result => {
+                        const url = result.url || result.link || '#';
+                        const title = result.title || 'No title';
+                        const snippet = result.snippet || '';
+                        let favicon = result.favicon || '';
+
+                        // Generate favicon URL safely
+                        if (!favicon) {
+                            try {
+                                if (url && url !== '#') {
+                                    const hostname = new URL(url).hostname;
+                                    favicon = `https://www.google.com/s2/favicons?domain=${hostname}`;
+                                } else {
+                                    favicon = 'https://www.google.com/s2/favicons?domain=example.com';
+                                }
+                            } catch (e) {
+                                // Fallback for invalid URLs
+                                favicon = 'https://www.google.com/s2/favicons?domain=example.com';
+                            }
+                        }
+
+                        searchResultsHtml += `
+                            <li class="search-result-item">
+                                <a href="${url}" class="search-result-link" target="_blank">
+                                    <img class="search-result-favicon" src="${favicon}" alt=""/>
+                                    <span class="search-result-title">${title}</span>
+                                </a>
+                                <div class="search-result-url">${url}</div>
+                                <div class="search-result-snippet">${snippet}</div>
+                            </li>
+                        `;
+                    });
+
+                    searchResultsHtml += `
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                // Try to stringify if it's an object
+                let detailsText = '';
+                if (typeof details === 'object') {
+                    try {
+                        // Remove base64_image and fullResult from JSON display to avoid huge output
+                        const detailsCopy = JSON.parse(JSON.stringify(details));
+                        if (detailsCopy.imageData) {
+                            detailsCopy.imageData = '[base64 image data]';
+                        }
+                        if (detailsCopy.details && detailsCopy.details.imageData) {
+                            detailsCopy.details.imageData = '[base64 image data]';
+                        }
+                        if (detailsCopy.base64_image) {
+                            detailsCopy.base64_image = '[base64 image data]';
+                        }
+                        if (detailsCopy.fullResult) {
+                            detailsCopy.fullResult = '[full result text]';
+                        }
+
+                        // Clean up results data in details display
+                        if (detailsCopy.results) {
+                            detailsCopy.results = `[${detailsCopy.results.length} search results]`;
+                        }
+                        if (detailsCopy.search_results) {
+                            detailsCopy.search_results = `[${detailsCopy.search_results.length} search results]`;
+                        }
+
+                        detailsText = JSON.stringify(detailsCopy, null, 2);
+                    } catch (e) {
+                        detailsText = String(details);
+                    }
+                } else {
+                    detailsText = String(details);
+                }
+
+                detailsHtml = `<pre class="event-details">${detailsText}</pre>`;
+
+                // Add search results HTML before the details
+                if (searchResultsHtml) {
+                    detailsHtml = searchResultsHtml + detailsHtml;
+                }
+            }
+
+            // Create event content
+            const content = `
+                <div class="event-header">
+                    <div class="event-time">${time}</div>
+                    <div class="event-type event-type-${type}">${type.toUpperCase()}</div>
+                </div>
+                <div class="event-content">
+                    <div class="event-message">${message}</div>
+                    ${imageHtml}
+                    ${detailsHtml}
+                </div>
+            `;
+
+            // Add content to event element
+            eventEl.innerHTML = content;
+
+            // Append to log
+            eventLog.appendChild(eventEl);
+
+            // Scroll to bottom
+            eventLog.scrollTop = eventLog.scrollHeight;
+        }
+
+        // Connect to the event stream
+        function connectEventStream() {
+            // Get session ID from input or generate a new one
+            sessionId = sessionIdInput.value.trim() || generateSessionId();
+            sessionIdInput.value = sessionId;
+
+            // Update UI
+            updateConnectionUI('connecting');
+            logEvent('system', 'Connecting to event stream...', { sessionId });
+
+            // Create new event source
+            eventSource = new PostEventSource('/api/agent/stream-post', {
+                sessionId,
+                reconnectTimeout: 3000,
+                maxReconnectAttempts: 5,
+                connectionOptions: {
+                    clientInfo: {
+                        type: 'web',
+                        userAgent: navigator.userAgent
+                    }
+                }
+            });
+
+            // Set up event listeners
+            setupEventListeners();
+
+            // Connect to the stream
+            eventSource.connect();
+        }
+
+        // Disconnect from the event stream
+        function disconnectEventStream() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+
+            // Update UI
+            updateConnectionUI('disconnected');
+            logEvent('system', 'Disconnected from event stream');
+        }
+
+        // Set up event listeners for the event source
+        function setupEventListeners() {
+            // Connection events
+            eventSource.addEventListener('open', () => {
+                updateConnectionUI('connected');
+                logEvent('system', 'Connected to event stream');
+
+                // Show placeholder memory data immediately on connection
+                createPlaceholderMemoryData();
+            });
+
+            eventSource.addEventListener('error', (e) => {
+                logEvent('error', 'Error in event stream', e.data);
+            });
+
+            eventSource.addEventListener('connecting', () => {
+                updateConnectionUI('connecting');
+                logEvent('system', 'Connecting to event stream...');
+            });
+
+            eventSource.addEventListener('reconnecting', (e) => {
+                updateConnectionUI('connecting');
+                logEvent('system', `Reconnecting (attempt ${e.data.attempt})...`);
+            });
+
+            eventSource.addEventListener('close', () => {
+                updateConnectionUI('disconnected');
+                logEvent('system', 'Connection closed');
+            });
+
+            // System events
+            eventSource.addEventListener('system_start', (e) => {
+                logEvent('system', e.data.message, e.data.details);
+            });
+
+            eventSource.addEventListener('system_end', (e) => {
+                logEvent('system', e.data.message, e.data.details);
+            });
+
+            eventSource.addEventListener('system_error', (e) => {
+                logEvent('error', e.data.message, e.data.details);
+            });
+
+            // Agent events
+            eventSource.addEventListener('agent_thinking', (e) => {
+                logEvent('agent', `${e.data.agent} thinking: ${e.data.message}`, e.data.details);
+            });
+
+            eventSource.addEventListener('agent_acting', (e) => {
+                // Check if this is a browser tool result with image data
+                const isBrowserToolResult =
+                    e.data.details &&
+                    e.data.details.originalEvent === 'tool_result' &&
+                    e.data.details.tool === 'browser' &&
+                    e.data.details.imageData;
+
+                // Check if this is a web search result
+                const isWebSearchResult =
+                    e.data.details &&
+                    e.data.details.originalEvent === 'tool_result' &&
+                    e.data.details.tool === 'web_search';
+
+                if (isBrowserToolResult) {
+                    logEvent('browser', `${e.data.agent} browser result: ${e.data.message}`, e.data.details);
+                } else if (isWebSearchResult) {
+                    // For web search tool results, extract and display results
+                    let eventDetails = e.data.details;
+                    // Process the search results if available
+                    console.log('Processing web search results:', eventDetails);
+                    logEvent('browser', `${e.data.agent} search results`, eventDetails);
+                } else {
+                    logEvent('agent', `${e.data.agent} acting: ${e.data.message}`, e.data.details);
+                }
+            });
+
+            eventSource.addEventListener('agent_transition', (e) => {
+                logEvent('agent', `Agent transition: ${e.data.message}`, e.data.details);
+            });
+
+            // Browser events
+            eventSource.addEventListener('browser_navigate', (e) => {
+                logEvent('browser', `Browser navigating to: ${e.data.details?.url || 'unknown'}`, e.data.details);
+            });
+
+            eventSource.addEventListener('browser_search', (e) => {
+                logEvent('browser', `Browser searching for: ${e.data.details?.query || 'unknown'}`, e.data.details);
+            });
+
+            eventSource.addEventListener('browser_search_results', (e) => {
+                logEvent('browser', `Browser search results for: ${e.data.details?.query || 'unknown'}`, e.data.details);
+            });
+
+            eventSource.addEventListener('browser_error', (e) => {
+                logEvent('error', `Browser error: ${e.data.message}`, e.data.details);
+            });
+
+            eventSource.addEventListener('browser_screenshot', (e) => {
+                logEvent('browser', `Browser screenshot captured`, e.data.details);
+            });
+
+            // Handle browser content events
+            eventSource.addEventListener('browser_content', (e) => {
+                logEvent('browser', `Browser content extracted`, e.data.details);
+            });
+
+            // Handle memory update events
+            eventSource.addEventListener('memory_update', (e) => {
+                console.log('Memory update event received:', e.data);
+                updateMemoryPanel(e.data.details);
+            });
+
+            // Debug listener for all events
+            eventSource.addEventListener('message', (e) => {
+                console.log('Raw SSE message received:', e);
+                try {
+                    const eventData = JSON.parse(e.data);
+                    console.log('Parsed event data:', eventData);
+
+                    // Check if this is a memory event that wasn't caught by specific handler
+                    if (eventData.type === 'memory_update') {
+                        console.log('Memory update from general handler:', eventData);
+                        updateMemoryPanel(eventData.details);
+                    }
+                } catch (err) {
+                    console.error('Error parsing event data:', err);
+                }
+            });
+        }
+
+        // Submit a query
+        async function submitQuery() {
+            const query = queryInput.value.trim();
+
+            if (!query) {
+                alert('Please enter a query');
+                return;
+            }
+
+            if (!sessionId) {
+                alert('Please connect to the stream first');
+                return;
+            }
+
+            // Disable submit button
+            submitBtn.disabled = true;
+
+            try {
+                // Log query submission
+                logEvent('system', 'Submitting query', { query });
+
+                // Submit query
+                const response = await fetch('/api/agent/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query,
+                        sessionId
+                    })
+                });
+
+                // Check for errors
+                if (!response.ok) {
+                    throw new Error('Error submitting query');
+                }
+
+                // Get response data
+                const data = await response.json();
+
+                // Log successful submission
+                logEvent('system', 'Query submitted successfully', { sessionId: data.sessionId });
+            } catch (error) {
+                logEvent('error', `Error submitting query: ${error.message}`);
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Clear the event log
+        function clearEventLog() {
+            eventLog.innerHTML = '';
+        }
+
+        // Set up event listeners for UI
+        connectBtn.addEventListener('click', connectEventStream);
+        disconnectBtn.addEventListener('click', disconnectEventStream);
+        submitBtn.addEventListener('click', submitQuery);
+        clearBtn.addEventListener('click', clearEventLog);
+
+        // Add the memory update handler
+        function updateMemoryPanel(memoryData) {
+            if (!memoryData) return;
+
+            // Update shared memory
+            updateSharedMemory(memoryData.sharedMemory, memoryData.accessor);
+
+            // Update private memories
+            updatePrivateMemories(memoryData.privateMemories, memoryData.activeAgent);
+        }
+
+        function updateSharedMemory(sharedMemory, accessor) {
+            const sharedMemoryElement = document.getElementById('shared-memory');
+            const sharedMemoryBadge = document.getElementById('shared-memory-badge');
+
+            // Update badge if being accessed
+            if (accessor) {
+                sharedMemoryBadge.textContent = `Accessed by ${accessor.toLowerCase()}`;
+                sharedMemoryBadge.className = 'badge badge-active';
+
+                // Reset badge after 2 seconds
+                setTimeout(() => {
+                    sharedMemoryBadge.textContent = 'Inactive';
+                    sharedMemoryBadge.className = 'badge';
+                }, 2000);
+            }
+
+            // Clear existing content
+            sharedMemoryElement.innerHTML = '';
+
+            // Check if there's data
+            if (!sharedMemory || Object.keys(sharedMemory).length === 0) {
+                sharedMemoryElement.innerHTML = '<div class="memory-empty">No data available yet</div>';
+                return;
+            }
+
+            // Add each memory item
+            for (const [key, value] of Object.entries(sharedMemory)) {
+                if (key.startsWith('_') || typeof value === 'function') continue;
+
+                const itemElement = document.createElement('div');
+                itemElement.className = 'memory-item';
+
+                const keyElement = document.createElement('div');
+                keyElement.className = 'memory-key';
+                keyElement.textContent = key;
+
+                const valueElement = document.createElement('div');
+                valueElement.className = 'memory-value';
+                valueElement.textContent = typeof value === 'object' ? JSON.stringify(value, null, 2) : value;
+
+                itemElement.appendChild(keyElement);
+                itemElement.appendChild(valueElement);
+
+                sharedMemoryElement.appendChild(itemElement);
+            }
+        }
+
+        function updatePrivateMemories(privateMemories, activeAgent) {
+            const privateMemoriesElement = document.getElementById('private-memories');
+
+            // Clear if no data
+            if (!privateMemories || Object.keys(privateMemories).length === 0) {
+                privateMemoriesElement.innerHTML = '<div class="memory-empty">No private memories available</div>';
+                return;
+            }
+
+            // Create or update each agent's memory section
+            for (const [agent, memory] of Object.entries(privateMemories)) {
+                const agentId = `private-memory-${agent}`;
+                let agentSection = document.getElementById(agentId);
+
+                // Create section if it doesn't exist
+                if (!agentSection) {
+                    agentSection = document.createElement('div');
+                    agentSection.id = agentId;
+                    agentSection.className = 'memory-section';
+
+                    const headerElement = document.createElement('div');
+                    headerElement.className = 'memory-header';
+
+                    const titleElement = document.createElement('span');
+                    titleElement.textContent = `${agent.charAt(0).toUpperCase() + agent.slice(1)} Memory`;
+
+                    const badgeElement = document.createElement('span');
+                    badgeElement.id = `${agentId}-badge`;
+                    badgeElement.className = 'badge';
+                    badgeElement.textContent = 'Inactive';
+
+                    headerElement.appendChild(titleElement);
+                    headerElement.appendChild(badgeElement);
+
+                    const contentElement = document.createElement('div');
+                    contentElement.id = `${agentId}-content`;
+                    contentElement.className = 'memory-content';
+
+                    agentSection.appendChild(headerElement);
+                    agentSection.appendChild(contentElement);
+
+                    privateMemoriesElement.appendChild(agentSection);
+                }
+
+                // Update active status
+                const badgeElement = document.getElementById(`${agentId}-badge`);
+                if (badgeElement) {
+                    if (activeAgent && activeAgent.toLowerCase() === agent.toLowerCase()) {
+                        badgeElement.textContent = 'Active';
+                        badgeElement.className = 'badge badge-active';
+                    } else {
+                        badgeElement.textContent = 'Inactive';
+                        badgeElement.className = 'badge';
+                    }
+                }
+
+                // Update content
+                const contentElement = document.getElementById(`${agentId}-content`);
+                if (contentElement) {
+                    contentElement.innerHTML = '';
+
+                    if (!memory || Object.keys(memory).length === 0) {
+                        contentElement.innerHTML = '<div class="memory-empty">No data available</div>';
+                    } else {
+                        for (const [key, value] of Object.entries(memory)) {
+                            if (key.startsWith('_') || typeof value === 'function') continue;
+
+                            const itemElement = document.createElement('div');
+                            itemElement.className = 'memory-item';
+
+                            const keyElement = document.createElement('div');
+                            keyElement.className = 'memory-key';
+                            keyElement.textContent = key;
+
+                            const valueElement = document.createElement('div');
+                            valueElement.className = 'memory-value';
+                            valueElement.textContent = typeof value === 'object' ? JSON.stringify(value, null, 2) : value;
+
+                            itemElement.appendChild(keyElement);
+                            itemElement.appendChild(valueElement);
+
+                            contentElement.appendChild(itemElement);
+                        }
+                    }
+                }
+            }
+        }
+
+        function handleEvent(event) {
+            console.log('Event received:', event);
+
+            try {
+                const data = JSON.parse(event);
+                const typeName = data.type?.toLowerCase() || 'unknown';
+
+                console.log(`Handling event of type: ${typeName}`);
+
+                // Handle memory update events immediately
+                if (typeName === 'memory_update') {
+                    console.log('Memory update event detected in handleEvent:', data);
+                    updateMemoryPanel(data.details);
+                    return; // Don't add to event log
+                }
+
+                // Create event entry
+                const eventItem = document.createElement('div');
+                eventItem.className = `event-item ${typeName}-event`;
+
+                // Handle different event types
+                if (typeName === 'agent_thinking' || typeName === 'agent_message') {
+                    handleAgentEvent(eventItem, data);
+                } else if (typeName === 'tool_call') {
+                    handleToolCall(eventItem, data);
+                } else if (typeName === 'tool_result') {
+                    handleToolResult(eventItem, data);
+                } else if (typeName === 'search_result') {
+                    handleSearchResult(eventItem, data);
+                } else {
+                    // Generic event handler
+                    const title = document.createElement('div');
+                    title.className = 'event-title';
+                    title.textContent = `${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`;
+
+                    const content = document.createElement('pre');
+                    content.className = 'event-content';
+                    content.textContent = JSON.stringify(data, null, 2);
+
+                    eventItem.appendChild(title);
+                    eventItem.appendChild(content);
+                }
+
+                // Add to log
+                const eventLog = document.getElementById('event-log');
+                eventLog.appendChild(eventItem);
+                eventLog.scrollTop = eventLog.scrollHeight;
+            } catch (error) {
+                console.error('Error parsing event:', error);
+            }
+        }
+
+        // Create and display placeholder memory data
+        function createPlaceholderMemoryData() {
+            console.log('Creating placeholder memory data');
+
+            // Basic placeholder data
+            const placeholderData = {
+                type: 'connection_established',
+                sharedMemory: {
+                    'status': 'Connected and ready',
+                    'sessionId': sessionId
+                },
+                privateMemories: {
+                    'orchestrator': {
+                        'status': 'Ready',
+                        'role': 'Coordinating agents and managing workflow'
+                    },
+                    'browser': {
+                        'status': 'Ready',
+                        'role': 'Searching the web and navigating sites'
+                    },
+                    'planning': {
+                        'status': 'Ready',
+                        'role': 'Creating plans and coordinating execution'
+                    }
+                },
+                activeAgent: 'orchestrator',
+                accessor: null,
+                timestamp: Date.now()
+            };
+
+            // Display the placeholder data
+            updateMemoryPanel(placeholderData);
+        }
+    </script>
+</body>
+
+</html>

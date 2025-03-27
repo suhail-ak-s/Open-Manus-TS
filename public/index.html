@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenManus TS - AI Agent Framework</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background-color: #0066cc;
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            margin-top: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .agent-selector {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .agent-option {
+            background-color: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            padding: 1rem;
+            cursor: pointer;
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .agent-option.selected {
+            border-color: #0066cc;
+            background-color: #e6f0fa;
+        }
+
+        .chat-interface {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 1rem;
+            background-color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 4px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: #e6f0fa;
+            margin-left: auto;
+            border-bottom-right-radius: 0;
+        }
+
+        .agent-message {
+            background-color: #f0f0f0;
+            margin-right: auto;
+            border-bottom-left-radius: 0;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0055aa;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s infinite linear;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .agent-info {
+            margin-bottom: 1rem;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f8f8f8;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #eaeaea;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .tool-call {
+            background-color: #e3f2fd;
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            border-left: 3px solid #0066cc;
+        }
+
+        .api-key-section {
+            margin-bottom: 1rem;
+        }
+
+        #api-key {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .save-key {
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <h1>OpenManus TypeScript</h1>
+            <div class="subtitle">AI Agent Framework</div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card api-key-section">
+            <h2>Configure OpenAI API Key</h2>
+            <p>Enter your OpenAI API key to use the agents. This key is stored only in your browser.</p>
+            <input type="password" id="api-key" placeholder="sk-...">
+            <button class="save-key" id="save-key">Save Key</button>
+        </div>
+
+        <div class="card">
+            <h2>Select an Agent Type</h2>
+            <div class="agent-selector">
+                <div class="agent-option" data-agent="cot">Chain of Thought</div>
+                <div class="agent-option" data-agent="react">ReAct</div>
+                <div class="agent-option selected" data-agent="toolcall">Tool Calling</div>
+                <div class="agent-option" data-agent="planning">Planning</div>
+                <div class="agent-option" data-agent="manus">Manus</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Chat with the Agent</h2>
+            <div class="agent-info">
+                <strong>Current Agent:</strong> <span id="current-agent">Tool Calling Agent</span>
+            </div>
+            <div id="error-container"></div>
+            <div class="chat-interface">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message agent-message">
+                        Hello! I'm your AI assistant. How can I help you today?
+                    </div>
+                </div>
+                <div class="input-area">
+                    <input type="text" id="user-input" placeholder="Type your message here...">
+                    <button id="send-button">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Advanced Features</h2>
+            <p>Try out our experimental features:</p>
+            <ul>
+                <li><a href="stream-example.html">Multi-Agent Streaming Demo</a> - See real-time agent activities with
+                    streaming events</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const apiKeyInput = document.getElementById('api-key');
+            const saveKeyButton = document.getElementById('save-key');
+            const agentOptions = document.querySelectorAll('.agent-option');
+            const currentAgentDisplay = document.getElementById('current-agent');
+            const chatMessages = document.getElementById('chat-messages');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const errorContainer = document.getElementById('error-container');
+
+            // Chat state
+            let chatMemory = [];
+            let currentAgent = 'toolcall';
+
+            // Load saved API key if exists
+            if (localStorage.getItem('openai_api_key')) {
+                apiKeyInput.value = localStorage.getItem('openai_api_key');
+            }
+
+            // Save API key to local storage
+            saveKeyButton.addEventListener('click', function () {
+                const apiKey = apiKeyInput.value.trim();
+                if (apiKey) {
+                    localStorage.setItem('openai_api_key', apiKey);
+                    showError('API key saved successfully!', 'success');
+                } else {
+                    showError('Please enter a valid API key');
+                }
+            });
+
+            // Select agent type
+            agentOptions.forEach(option => {
+                option.addEventListener('click', function () {
+                    agentOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    currentAgent = this.getAttribute('data-agent');
+                    currentAgentDisplay.textContent = this.textContent + ' Agent';
+                });
+            });
+
+            // Show error message
+            function showError(message, type = 'error') {
+                errorContainer.innerHTML = '';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = type === 'error' ? 'error-message' : 'success-message';
+                errorDiv.textContent = message;
+                errorContainer.appendChild(errorDiv);
+
+                // Clear error after 5 seconds
+                setTimeout(() => {
+                    errorContainer.innerHTML = '';
+                }, 5000);
+            }
+
+            // Format message content with tool calls
+            function formatMessage(message) {
+                let content = message.content || '';
+
+                // Handle tool calls if present
+                if (message.tool_calls && message.tool_calls.length > 0) {
+                    content += '<div class="tool-calls">';
+                    message.tool_calls.forEach(toolCall => {
+                        content += `<div class="tool-call">
+                            <strong>Tool:</strong> ${toolCall.function.name}<br>
+                            <strong>Arguments:</strong><br>
+                            <pre>${JSON.stringify(JSON.parse(toolCall.function.arguments), null, 2)}</pre>
+                        </div>`;
+                    });
+                    content += '</div>';
+                }
+
+                return content;
+            }
+
+            // Add message to chat
+            function addMessage(message, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+                messageDiv.classList.add(sender + '-message');
+
+                if (typeof message === 'object') {
+                    messageDiv.innerHTML = formatMessage(message);
+                } else {
+                    messageDiv.textContent = message;
+                }
+
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // Send message
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (message) {
+                    // Add user message to chat
+                    addMessage(message, 'user');
+
+                    // Clear input
+                    userInput.value = '';
+
+                    // Simulate agent response (this would be replaced with actual API call)
+                    sendButton.disabled = true;
+                    sendButton.innerHTML = '<div class="spinner"></div>Processing...';
+
+                    setTimeout(() => {
+                        const selectedAgent = document.querySelector('.agent-option.selected').getAttribute('data-agent');
+                        let response = "I'm processing your request with the " + selectedAgent + " agent. This is a placeholder response since we're not connected to a backend yet.";
+                        addMessage(response, 'agent');
+
+                        sendButton.disabled = false;
+                        sendButton.textContent = 'Send';
+                    }, 1500);
+                }
+            }
+
+            // Event listeners
+            sendButton.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

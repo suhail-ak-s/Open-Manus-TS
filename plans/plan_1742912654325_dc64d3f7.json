@@ -1,0 +1,78 @@
+{
+  "id": "plan_1742912654325_dc64d3f7",
+  "name": "Test Plan for Node.js Web Server",
+  "description": "Example plan for creating a simple Node.js web server",
+  "createdAt": 1742912654325,
+  "updatedAt": 1742912658379,
+  "status": "completed",
+  "steps": [
+    {
+      "id": "step_1742912654326_411f5037",
+      "name": "Research Express.js",
+      "description": "Search for information on setting up a basic Express.js server",
+      "agentType": "browser",
+      "status": "completed",
+      "priority": 1,
+      "dependencies": [],
+      "retryCount": 0,
+      "maxRetries": 3,
+      "startedAt": 1742912654366,
+      "completedAt": 1742912655367,
+      "result": {
+        "success": true,
+        "output": "Successfully completed Research Express.js. This is a simulated result."
+      }
+    },
+    {
+      "id": "step_1742912654326_16b7bd9c",
+      "name": "Initialize project",
+      "description": "Create package.json and install necessary dependencies",
+      "agentType": "terminal",
+      "status": "completed",
+      "priority": 2,
+      "dependencies": [],
+      "retryCount": 0,
+      "maxRetries": 3,
+      "startedAt": 1742912655373,
+      "completedAt": 1742912656374,
+      "result": {
+        "success": true,
+        "output": "Successfully completed Initialize project. This is a simulated result."
+      }
+    },
+    {
+      "id": "step_1742912654326_36e7f35d",
+      "name": "Write server code",
+      "description": "Create server.js with Express configuration to serve static files",
+      "agentType": "swe",
+      "status": "completed",
+      "priority": 3,
+      "dependencies": ["step_1", "step_2"],
+      "retryCount": 0,
+      "maxRetries": 3,
+      "startedAt": 1742912656375,
+      "completedAt": 1742912657376,
+      "result": {
+        "success": true,
+        "output": "Successfully completed Write server code. This is a simulated result."
+      }
+    },
+    {
+      "id": "step_1742912654326_1f785ca7",
+      "name": "Test server",
+      "description": "Run the server and verify it serves static files correctly",
+      "agentType": "terminal",
+      "status": "completed",
+      "priority": 4,
+      "dependencies": ["step_3"],
+      "retryCount": 0,
+      "maxRetries": 3,
+      "startedAt": 1742912657377,
+      "completedAt": 1742912658379,
+      "result": {
+        "success": true,
+        "output": "Successfully completed Test server. This is a simulated result."
+      }
+    }
+  ]
+}

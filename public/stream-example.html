@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenManus Streaming Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            grid-gap: 20px;
+        }
+
+        .sidebar {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .main-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: auto;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background-color: #3b78e7;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .log-container {
+            background-color: #f7f9fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 20px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .agent-event {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .agent-orchestrator {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+
+        .agent-planning {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+        }
+
+        .agent-browser {
+            background-color: #fff3e0;
+            border-left: 4px solid #ff9800;
+        }
+
+        .agent-terminal {
+            background-color: #fce4ec;
+            border-left: 4px solid #e91e63;
+        }
+
+        .agent-swe {
+            background-color: #f3e5f5;
+            border-left: 4px solid #9c27b0;
+        }
+
+        .event-time {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .event-agent {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        .event-message {
+            font-weight: 600;
+            display: block;
+            margin: 4px 0;
+        }
+
+        .event-details {
+            font-size: 12px;
+            color: #333;
+        }
+
+        .iframe-container {
+            margin-top: 20px;
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .search-results {
+            margin-top: 15px;
+        }
+
+        .search-result {
+            padding: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+
+        .search-result h4 {
+            margin: 0 0 5px 0;
+        }
+
+        .search-result a {
+            color: #1a0dab;
+            text-decoration: none;
+        }
+
+        .search-result a:hover {
+            text-decoration: underline;
+        }
+
+        .search-result .snippet {
+            color: #545454;
+            font-size: 13px;
+        }
+
+        .search-result .favicon {
+            width: 16px;
+            height: 16px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        .browser-error-notification {
+            background-color: #ffdddd;
+            border: 1px solid #ffaaaa;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .error-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .error-url {
+            margin-bottom: 5px;
+        }
+
+        .error-message {
+            margin-bottom: 5px;
+        }
+
+        .error-details {
+            font-size: 12px;
+            color: #333;
+        }
+
+        .browser-error {
+            border: 2px solid #ff0000 !important;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5) !important;
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Query Form</h1>
+            <div class="input-group">
+                <label for="query">Enter your query:</label>
+                <textarea id="query" placeholder="E.g., Plan a 3-day trip to Paris, France."></textarea>
+            </div>
+            <button id="submit-btn">Submit Query</button>
+            <button id="clear-btn">Clear Results</button>
+            <div id="session-info" style="margin-top: 15px; font-size: 13px;">
+                Session ID: <span id="session-id">Not connected</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <h1>Agent Activity</h1>
+            <div id="event-log" class="log-container"></div>
+
+            <div id="browser-view" style="display: none;">
+                <h2>Browser View</h2>
+                <div id="search-results" class="search-results"></div>
+                <div id="iframe-container" class="iframe-container">
+                    <iframe id="browser-iframe" sandbox="allow-same-origin allow-scripts"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const queryInput = document.getElementById('query');
+        const submitBtn = document.getElementById('submit-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const sessionIdSpan = document.getElementById('session-id');
+        const eventLog = document.getElementById('event-log');
+        const browserView = document.getElementById('browser-view');
+        const searchResults = document.getElementById('search-results');
+        const browserIframe = document.getElementById('browser-iframe');
+
+        // State variables
+        let sessionId = null;
+        let eventSource = null;
+        let isProcessing = false;
+
+        // Generate a random session ID
+        function generateSessionId() {
+            return 'session_' + Math.random().toString(36).substring(2, 15);
+        }
+
+        // Initialize session
+        function initSession() {
+            sessionId = generateSessionId();
+            sessionIdSpan.textContent = sessionId;
+
+            // Connect to event stream
+            connectEventStream();
+        }
+
+        // Connect to event stream
+        function connectEventStream() {
+            // Close existing connection if any
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            // Create new SSE connection
+            eventSource = new EventSource(`/api/agent/stream?sessionId=${sessionId}`);
+
+            // Set up event listeners
+            eventSource.onopen = function () {
+                console.log('Connected to event stream');
+                logEvent({
+                    type: 'system_start',
+                    agent: 'orchestrator',
+                    message: 'Connected to event stream',
+                    timestamp: Date.now()
+                });
+            };
+
+            eventSource.onerror = function (error) {
+                console.error('Error connecting to event stream:', error);
+                logEvent({
+                    type: 'system_error',
+                    agent: 'orchestrator',
+                    message: 'Error connecting to event stream',
+                    timestamp: Date.now()
+                });
+            };
+
+            // Listen for different event types
+            setupEventListeners();
+        }
+
+        // Set up event listeners for various event types
+        function setupEventListeners() {
+            // System events
+            eventSource.addEventListener('system_start', handleEvent);
+            eventSource.addEventListener('system_end', handleEvent);
+            eventSource.addEventListener('system_error', handleEvent);
+
+            // Agent events
+            eventSource.addEventListener('agent_thinking', handleEvent);
+            eventSource.addEventListener('agent_acting', handleEvent);
+            eventSource.addEventListener('agent_transition', handleEvent);
+
+            // Orchestrator events
+            eventSource.addEventListener('orchestrator_planning', handleEvent);
+            eventSource.addEventListener('orchestrator_executing', handleEvent);
+
+            // Planning events
+            eventSource.addEventListener('plan_created', handlePlanEvent);
+            eventSource.addEventListener('plan_updated', handlePlanEvent);
+            eventSource.addEventListener('plan_step_started', handleEvent);
+            eventSource.addEventListener('plan_step_completed', handleEvent);
+
+            // Browser events
+            eventSource.addEventListener('browser_search', handleEvent);
+            eventSource.addEventListener('browser_search_results', handleBrowserSearchResults);
+            eventSource.addEventListener('browser_navigate', handleBrowserNavigate);
+            eventSource.addEventListener('browser_content', handleEvent);
+            eventSource.addEventListener('browser_screenshot', handleBrowserScreenshot);
+            eventSource.addEventListener('browser_scroll', handleEvent);
+            eventSource.addEventListener('browser_error', handleBrowserError);
+
+            // Terminal events
+            eventSource.addEventListener('terminal_command', handleEvent);
+            eventSource.addEventListener('terminal_output', handleEvent);
+
+            // SWE events
+            eventSource.addEventListener('swe_reading_file', handleEvent);
+            eventSource.addEventListener('swe_writing_file', handleEvent);
+            eventSource.addEventListener('swe_code_analysis', handleEvent);
+        }
+
+        // Handle a generic event
+        function handleEvent(eventData) {
+            const event = typeof eventData.data === 'string' ? JSON.parse(eventData.data) : eventData.data;
+
+            // Log the event
+            logEvent(event);
+
+            // Handle completion events
+            if (event.type === 'system_end') {
+                isProcessing = false;
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Handle browser search results
+        function handleBrowserSearchResults(eventData) {
+            const event = typeof eventData.data === 'string' ? JSON.parse(eventData.data) : eventData.data;
+
+            // Log the event
+            logEvent(event);
+
+            // Display search results if available
+            if (event.details && event.details.results && Array.isArray(event.details.results)) {
+                displaySearchResults(event.details.results);
+            }
+
+            // Show browser view
+            browserView.style.display = 'block';
+        }
+
+        // Handle browser navigation
+        function handleBrowserNavigate(eventData) {
+            const event = typeof eventData.data === 'string' ? JSON.parse(eventData.data) : eventData.data;
+
+            // Log the event
+            logEvent(event);
+
+            // Navigate the iframe if URL is available
+            if (event.details && event.details.url) {
+                browserIframe.src = event.details.url;
+            }
+
+            // Show browser view
+            browserView.style.display = 'block';
+        }
+
+        // Handle browser screenshots
+        function handleBrowserScreenshot(eventData) {
+            const event = typeof eventData.data === 'string' ? JSON.parse(eventData.data) : eventData.data;
+
+            // Log the event
+            logEvent(event);
+
+            // Display screenshot if available
+            if (event.details && event.details.imageData) {
+                // Create a screenshot container if it doesn't exist
+                let screenshotContainer = document.getElementById('screenshot-container');
+                if (!screenshotContainer) {
+                    screenshotContainer = document.createElement('div');
+                    screenshotContainer.id = 'screenshot-container';
+                    screenshotContainer.style.marginTop = '15px';
+                    browserView.appendChild(screenshotContainer);
+                }
+
+                // Create and append the image
+                const img = document.createElement('img');
+                img.src = event.details.imageData;
+                img.style.width = '100%';
+                img.style.border = '1px solid #ddd';
+                img.style.borderRadius = '4px';
+
+                // Clear previous screenshots
+                screenshotContainer.innerHTML = '';
+                screenshotContainer.appendChild(img);
+            }
+
+            // Show browser view
+            browserView.style.display = 'block';
+        }
+
+        // Handle plan creation or update events
+        function handlePlanEvent(eventData) {
+            const event = typeof eventData.data === 'string' ? JSON.parse(eventData.data) : eventData.data;
+
+            // Log the event
+            logEvent(event);
+
+            // Create a plan view container if it doesn't exist
+            let planContainer = document.getElementById('plan-container');
+            if (!planContainer) {
+                // Create container
+                planContainer = document.createElement('div');
+                planContainer.id = 'plan-container';
+                planContainer.style.marginTop = '20px';
+                planContainer.style.backgroundColor = '#f5f9ff';
+                planContainer.style.border = '1px solid #d0e3ff';
+                planContainer.style.borderRadius = '8px';
+                planContainer.style.padding = '15px';
+
+                // Create heading
+                const heading = document.createElement('h2');
+                heading.textContent = 'Current Plan';
+                heading.style.marginTop = '0';
+                planContainer.appendChild(heading);
+
+                // Create plan content div
+                const contentDiv = document.createElement('div');
+                contentDiv.id = 'plan-content';
+                planContainer.appendChild(contentDiv);
+
+                // Add to the main content area before the browser view
+                const mainContent = document.querySelector('.main-content');
+                mainContent.insertBefore(planContainer, browserView);
+            }
+
+            // Get plan content container
+            const planContent = document.getElementById('plan-content');
+
+            // Display plan details if available
+            if (event.details) {
+                const title = event.details.title || 'Structured Plan';
+                const description = event.details.description || '';
+                const steps = event.details.steps || [];
+
+                // Create plan HTML
+                let planHtml = `
+                    <h3>${title}</h3>
+                    <p>${description}</p>
+                    <h4>Steps:</h4>
+                    <ol class="plan-steps">
+                `;
+
+                // Add each step
+                steps.forEach(step => {
+                    const status = step.completed ? '✅' : '⏳';
+                    const agentBadge = `<span class="agent-badge agent-${step.agent}">${step.agent}</span>`;
+
+                    planHtml += `
+                        <li class="plan-step">
+                            <div class="step-header">
+                                <span class="step-status">${status}</span>
+                                ${agentBadge}
+                                <span class="step-description">${step.description}</span>
+                            </div>
+                        </li>
+                    `;
+                });
+
+                planHtml += `</ol>`;
+
+                // Add styles for plan elements
+                planHtml += `
+                    <style>
+                        .plan-steps {
+                            padding-left: 20px;
+                        }
+                        .plan-step {
+                            margin-bottom: 10px;
+                            padding: 8px;
+                            background-color: white;
+                            border-radius: 4px;
+                            border: 1px solid #eee;
+                        }
+                        .step-header {
+                            display: flex;
+                            align-items: center;
+                        }
+                        .step-status {
+                            margin-right: 8px;
+                        }
+                        .agent-badge {
+                            padding: 2px 6px;
+                            border-radius: 4px;
+                            font-size: 11px;
+                            font-weight: bold;
+                            color: white;
+                            margin-right: 8px;
+                        }
+                        .agent-orchestrator {
+                            background-color: #2196f3;
+                        }
+                        .agent-planning {
+                            background-color: #4caf50;
+                        }
+                        .agent-browser {
+                            background-color: #ff9800;
+                        }
+                        .agent-terminal {
+                            background-color: #e91e63;
+                        }
+                        .agent-swe {
+                            background-color: #9c27b0;
+                        }
+                    </style>
+                `;
+
+                // Set content
+                planContent.innerHTML = planHtml;
+
+                // Show the plan container
+                planContainer.style.display = 'block';
+            }
+        }
+
+        // Display search results
+        function displaySearchResults(results) {
+            // Clear previous results
+            searchResults.innerHTML = '';
+
+            // Create and append result elements
+            results.forEach(result => {
+                const resultEl = document.createElement('div');
+                resultEl.className = 'search-result';
+
+                // Create favicon and title
+                const titleHtml = `
+                    <h4>
+                        ${result.favicon ? `<img src="${result.favicon}" class="favicon" alt="Favicon" />` : ''}
+                        <a href="${result.url}" target="_blank">${result.title}</a>
+                    </h4>
+                `;
+
+                // Create snippet
+                const snippetHtml = `<div class="snippet">${result.snippet}</div>`;
+
+                // Add content to result element
+                resultEl.innerHTML = titleHtml + snippetHtml;
+
+                // Add click event to navigate iframe
+                resultEl.querySelector('a').addEventListener('click', function (e) {
+                    e.preventDefault();
+                    browserIframe.src = result.url;
+                });
+
+                // Append to results container
+                searchResults.appendChild(resultEl);
+            });
+        }
+
+        // Log an event to the event log
+        function logEvent(event) {
+            // Create event element
+            const eventEl = document.createElement('div');
+            eventEl.className = `agent-event agent-${event.agent}`;
+
+            // Format timestamp
+            const time = new Date(event.timestamp).toLocaleTimeString();
+
+            // Create event content
+            const content = `
+                <div class="event-time">${time}</div>
+                <div class="event-agent">${event.agent}</div>
+                <div class="event-message">${event.message}</div>
+                ${event.details ? `<div class="event-details">${formatDetails(event.details)}</div>` : ''}
+            `;
+
+            // Add content to event element
+            eventEl.innerHTML = content;
+
+            // Append to log
+            eventLog.appendChild(eventEl);
+
+            // Scroll to bottom
+            eventLog.scrollTop = eventLog.scrollHeight;
+        }
+
+        // Format event details for display
+        function formatDetails(details) {
+            if (!details) return '';
+
+            // Filter out large or complex details
+            const simplifiedDetails = { ...details };
+
+            // Remove potentially large or complex properties
+            ['results', 'imageData', 'plan', 'thinking'].forEach(key => {
+                if (simplifiedDetails[key]) {
+                    if (key === 'results') {
+                        simplifiedDetails[key] = `[${simplifiedDetails[key].length} results]`;
+                    } else if (key === 'imageData') {
+                        simplifiedDetails[key] = '[screenshot data]';
+                    } else if (key === 'plan') {
+                        simplifiedDetails[key] = '[plan data]';
+                    } else if (key === 'thinking' && simplifiedDetails[key].length > 100) {
+                        simplifiedDetails[key] = simplifiedDetails[key].substring(0, 100) + '...';
+                    }
+                }
+            });
+
+            // Format as string
+            return JSON.stringify(simplifiedDetails, null, 2)
+                .replace(/[{}"]/g, '')
+                .replace(/,/g, '')
+                .replace(/:/g, ': ')
+                .replace(/\n\s\s/g, '<br>');
+        }
+
+        // Submit a query
+        async function submitQuery() {
+            const query = queryInput.value.trim();
+
+            if (!query) {
+                alert('Please enter a query');
+                return;
+            }
+
+            if (!sessionId) {
+                initSession();
+            }
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            isProcessing = true;
+
+            try {
+                // Log query submission
+                logEvent({
+                    type: 'system_start',
+                    agent: 'orchestrator',
+                    message: 'Submitting query',
+                    timestamp: Date.now(),
+                    details: { query }
+                });
+
+                // Submit query
+                const response = await fetch('/api/agent/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query,
+                        sessionId
+                    })
+                });
+
+                // Check for errors
+                if (!response.ok) {
+                    throw new Error('Error submitting query');
+                }
+
+                // Get response data
+                const data = await response.json();
+
+                // Log successful submission
+                logEvent({
+                    type: 'system_start',
+                    agent: 'orchestrator',
+                    message: 'Query submitted successfully',
+                    timestamp: Date.now(),
+                    details: { sessionId: data.sessionId }
+                });
+            } catch (error) {
+                console.error('Error submitting query:', error);
+
+                // Log error
+                logEvent({
+                    type: 'system_error',
+                    agent: 'orchestrator',
+                    message: `Error submitting query: ${error.message}`,
+                    timestamp: Date.now()
+                });
+
+                // Enable submit button
+                submitBtn.disabled = false;
+                isProcessing = false;
+            }
+        }
+
+        // Clear results
+        function clearResults() {
+            // Clear event log
+            eventLog.innerHTML = '';
+
+            // Clear search results
+            searchResults.innerHTML = '';
+
+            // Clear iframe
+            browserIframe.src = '';
+
+            // Hide browser view
+            browserView.style.display = 'none';
+
+            // Remove plan container if it exists
+            const planContainer = document.getElementById('plan-container');
+            if (planContainer) {
+                planContainer.style.display = 'none';
+                document.getElementById('plan-content').innerHTML = '';
+            }
+
+            // Remove screenshot container if it exists
+            const screenshotContainer = document.getElementById('screenshot-container');
+            if (screenshotContainer) {
+                screenshotContainer.remove();
+            }
+
+            // Generate new session ID
+            initSession();
+        }
+
+        // Handle browser error events
+        function handleBrowserError(eventData) {
+            const event = typeof eventData.data === 'string' ? JSON.parse(eventData.data) : eventData.data;
+
+            // Log the event
+            logEvent(event);
+
+            // Create error notification
+            const errorEl = document.createElement('div');
+            errorEl.className = 'browser-error-notification';
+
+            // Format details
+            let errorDetails = '';
+            if (event.details) {
+                if (event.details.url) {
+                    errorDetails += `<div class="error-url"><strong>URL:</strong> ${event.details.url}</div>`;
+                }
+                if (event.details.userMessage) {
+                    errorDetails += `<div class="error-message">${event.details.userMessage}</div>`;
+                } else if (event.details.errorMessage) {
+                    errorDetails += `<div class="error-message">${event.details.errorMessage}</div>`;
+                }
+                if (event.details.error) {
+                    errorDetails += `<div class="error-details"><code>${event.details.error}</code></div>`;
+                }
+            }
+
+            // Add error content
+            errorEl.innerHTML = `
+                <div class="error-title">Browser Error</div>
+                ${errorDetails}
+            `;
+
+            // Add to results area
+            const resultsArea = document.getElementById('results-area');
+            if (resultsArea) {
+                resultsArea.appendChild(errorEl);
+                resultsArea.scrollTop = resultsArea.scrollHeight;
+            }
+
+            // Also show in browser view with error styling
+            browserView.style.display = 'block';
+            browserView.classList.add('browser-error');
+            setTimeout(() => {
+                browserView.classList.remove('browser-error');
+            }, 3000);
+        }
+
+        // Initialize page
+        function init() {
+            // Set up event listeners
+            submitBtn.addEventListener('click', submitQuery);
+            clearBtn.addEventListener('click', clearResults);
+
+            // Initialize session
+            initSession();
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>

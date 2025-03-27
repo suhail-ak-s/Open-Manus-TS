@@ -69,4 +69,5 @@ temp/
 output.txt
 workspace/
 screenshots/
-visualizations/ 
+visualizations/
+visualization/ 

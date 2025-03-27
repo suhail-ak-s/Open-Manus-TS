@@ -226,7 +226,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Related Projects
 
-- Original OpenManus Python implementation
+- [OpenManus Python](https://github.com/mannaandpoem/OpenManus) - The original Python implementation with 40k+ stars
 - [LangChain](https://github.com/langchain-ai/langchain)
 - [AutoGPT](https://github.com/Significant-Gravitas/Auto-GPT)
 

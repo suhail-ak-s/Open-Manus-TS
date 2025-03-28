@@ -28,6 +28,6 @@ RUN npm run build
 
 USER nonroot
 
-EXPOSE 9007
+EXPOSE 8080
 
 CMD ["pm2-runtime", "dist/server.js"]

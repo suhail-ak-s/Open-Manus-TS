@@ -22,7 +22,7 @@ RUN npm install pm2@latest -g
 
 COPY --chown=nonroot:nonroot . .
 
-RUN mkdir -p log && chown -R nonroot:nonroot log
+RUN mkdir -p logs workspace visualization && chown -R nonroot:nonroot logs workspace visualization
 
 RUN npm run build
 

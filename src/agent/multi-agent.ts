@@ -15,6 +15,8 @@ import documentationGenerator from '../utils/documentation-generator';
 import { PrivateMemory } from './private-memory';
 import { PlanningAgent } from './planning-agent';
 import { StructuredPlan, PlanStep } from './structured-plan';
+import { TerminateTool } from '../tool/terminate';
+import { BrowserAgent } from './browser';
 
 /**
  * System prompt for the multi-agent orchestrator
@@ -28,10 +30,12 @@ You have access to the following specialized agents:
 2. SWE Agent - Handles software engineering tasks
 3. Browser Agent - Manages web interactions and information gathering
 4. Terminal Agent - Executes terminal commands
+/* Maritime agents commented out
 5. Purchase Agent - Specializes in maritime vessel procurement and purchasing
 6. Certificate Agent - Handles maritime vessel certifications and compliance
 7. Budget Agent - Manages financial planning and budgeting for maritime fleet
 8. Defects Agent - Handles vessel maintenance, defects tracking and repairs
+*/
 
 Your responsibilities:
 - Analyze user requests to determine which agent(s) to use
@@ -59,10 +63,12 @@ Options:
 2. SWE Agent - For software development and code tasks
 3. Browser Agent - For web research and information gathering
 4. Terminal Agent - For command execution and system operations
+/* Maritime agents commented out
 5. Purchase Agent - For maritime procurement, spare parts and vendor management
 6. Certificate Agent - For maritime regulations, compliance and vessel certifications
 7. Budget Agent - For financial planning, cost tracking and budget management
 8. Defects Agent - For vessel maintenance, repairs and defect tracking
+*/
 
 First, THINK THROUGH what the current goal is and what progress has been made.
 Then, decide which specialized agent is best suited for the next step.
@@ -77,6 +83,7 @@ export enum AgentType {
   SWE = 'swe',
   BROWSER = 'browser',
   TERMINAL = 'terminal',
+  // Maritime agents commented out
   PURCHASE = 'purchase',
   CERTIFICATE = 'certificate',
   BUDGET = 'budget',
@@ -201,10 +208,27 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
     const sweLLM = new LLM();
     const browserLLM = new LLM();
     const terminalLLM = new LLM();
+    
+    /* Maritime agents commented out
     const purchaseLLM = new LLM();
     const certificateLLM = new LLM();
     const budgetLLM = new LLM();
     const defectsLLM = new LLM();
+    */
+
+    // Create a placeholder agent for maritime agents (commented out)
+    const createPlaceholderAgent = (name: string): ToolCallAgent => {
+      return new ToolCallAgent({
+        name: `${name}Agent`,
+        description: `Placeholder for ${name} agent (disabled)`,
+        systemPrompt: '',
+        maxSteps: 1,
+        memory: this.sharedMemory,
+        llm: new LLM(),
+        toolChoices: 'auto',
+        availableTools: new ToolCollection([]),
+      });
+    };
 
     // Create specialized agent instances
     this.agents = {
@@ -213,10 +237,12 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
       [AgentType.SWE]: this.createSWEAgent(sweLLM, options),
       [AgentType.BROWSER]: this.createBrowserAgent(browserLLM, options),
       [AgentType.TERMINAL]: this.createTerminalAgent(terminalLLM, options),
-      [AgentType.PURCHASE]: this.createPurchaseAgent(purchaseLLM, options),
-      [AgentType.CERTIFICATE]: this.createCertificateAgent(certificateLLM, options),
-      [AgentType.BUDGET]: this.createBudgetAgent(budgetLLM, options),
-      [AgentType.DEFECTS]: this.createDefectsAgent(defectsLLM, options),
+      
+      // Use placeholder agents for maritime agents (commented out)
+      [AgentType.PURCHASE]: createPlaceholderAgent('Purchase'),
+      [AgentType.CERTIFICATE]: createPlaceholderAgent('Certificate'),
+      [AgentType.BUDGET]: createPlaceholderAgent('Budget'),
+      [AgentType.DEFECTS]: createPlaceholderAgent('Defects'),
     };
 
     // Initialize private memory for each agent
@@ -292,58 +318,13 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
    * Create the browser agent
    */
   private createBrowserAgent(llm: LLM, options: any): ToolCallAgent {
-    // Enhanced system prompt focusing on ReAct pattern
-    const browserSystemPrompt = `
-        You are a Browser Agent within the OpenManus multi-agent system.
-        Your role is to gather information from the web, process it, and perform web-based tasks.
-
-        IMPORTANT: You must follow the ReAct pattern (Reasoning and Acting) for all tasks:
-        1. THINK - First analyze what information you need and plan how to get it
-        2. ACT - Use appropriate tools to gather information or perform actions
-        3. OBSERVE - Review what you found or the result of your actions
-        4. REFLECT - Consider what you learned and what to do next
-        5. REPEAT - Continue this cycle until the task is complete
-
-        Your primary tools are:
-        1. WebSearchTool - For finding information via search engines
-        2. BrowserTool - For navigating to specific websites, extracting content, and interacting with web pages
-
-        For most tasks, you should:
-        1. Start with search queries to identify relevant sources
-        2. Navigate to specific websites to gather detailed information
-        3. Extract and compare information from multiple sources
-        4. Synthesize findings into well-structured, actionable information
-
-        NEVER just return raw search results without analysis. Always process and synthesize information.
-
-        For research tasks, ensure you provide:
-        - Specific factual details (prices, schedules, options, features)
-        - Comparisons between alternatives when appropriate
-        - Direct quotes and information from authoritative sources
-        - Citations and links to your sources
-        - Well-organized, structured responses
-        `;
-
-    // Create tools with event handler support
-    const webSearchTool = new WebSearchTool();
-    const browserTool = new BrowserTool({
-      eventHandler: this.eventHandler,
-    });
-
-    // Browser agent needs web tools
-    const browserTools = new ToolCollection([webSearchTool, browserTool]);
-
-    // Use ToolCallAgent for stability
-    return new ToolCallAgent({
-      name: 'BrowserAgent',
-      description: 'Handles web browsing and information gathering',
-      systemPrompt: browserSystemPrompt,
-      maxSteps: 15, // Increase max steps to allow for multiple think-act cycles
-      memory: this.sharedMemory,
+    // Use our enhanced BrowserAgent class instead of ToolCallAgent
+    return new BrowserAgent({
+      ...options,
+      memory: this.sharedMemory, // Provide shared memory
+      privateMemory: new PrivateMemory('browser'),
       llm,
-      toolChoices: 'auto',
-      availableTools: browserTools,
-      eventHandler: this.eventHandler, // Also pass eventHandler to the agent itself
+      eventHandler: this.eventHandler,
     });
   }
 
@@ -382,6 +363,7 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
   /**
    * Create the purchase agent specialized in procurement and purchasing for maritime vessels
    */
+  /* Maritime agent commented out
   private createPurchaseAgent(llm: LLM, options: any): ToolCallAgent {
     const purchaseSystemPrompt = `
         You are a Purchase Agent within the OpenManus multi-agent system for Synergy Marine Group.
@@ -419,10 +401,12 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
       availableTools: purchaseTools,
     });
   }
+  */
 
   /**
    * Create the certificate agent specialized in maritime certifications and compliance
    */
+  /* Maritime agent commented out
   private createCertificateAgent(llm: LLM, options: any): ToolCallAgent {
     const certificateSystemPrompt = `
         You are a Certificate Agent within the OpenManus multi-agent system for Synergy Marine Group.
@@ -462,10 +446,12 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
       availableTools: certificateTools,
     });
   }
+  */
 
   /**
    * Create the budget agent specialized in maritime financial management
    */
+  /* Maritime agent commented out
   private createBudgetAgent(llm: LLM, options: any): ToolCallAgent {
     const budgetSystemPrompt = `
         You are a Budget Agent within the OpenManus multi-agent system for Synergy Marine Group.
@@ -506,10 +492,12 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
       availableTools: budgetTools,
     });
   }
+  */
 
   /**
    * Create the defects agent specialized in maritime vessel maintenance and repairs
    */
+  /* Maritime agent commented out
   private createDefectsAgent(llm: LLM, options: any): ToolCallAgent {
     const defectsSystemPrompt = `
         You are a Defects Agent within the OpenManus multi-agent system for Synergy Marine Group.
@@ -550,6 +538,7 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
       availableTools: defectsTools,
     });
   }
+  */
 
   /**
    * Determine which agent should handle the current step
@@ -1054,6 +1043,7 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
       /execute command/i,
     ];
 
+    /* Maritime agents commented out
     const purchaseMentions = [
       /purchase agent/i,
       /procurement/i,
@@ -1103,6 +1093,7 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
       /technical issue/i,
       /dry dock/i,
     ];
+    */
 
     // Check if the response strongly indicates a specific agent
     if (planningMentions.some(pattern => pattern.test(content))) {
@@ -1121,6 +1112,7 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
       return AgentType.TERMINAL;
     }
 
+    /* Maritime agents commented out
     if (purchaseMentions.some(pattern => pattern.test(content))) {
       return AgentType.PURCHASE;
     }
@@ -1136,6 +1128,7 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
     if (defectsMentions.some(pattern => pattern.test(content))) {
       return AgentType.DEFECTS;
     }
+    */
 
     // Default to orchestrator if no clear pattern
     return AgentType.ORCHESTRATOR;
@@ -2507,12 +2500,41 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
         // Log when control returns to orchestrator
         log.info(`Orchestrator regained control after ${step.assignedAgent} completed step`);
 
-        // Get the result from the last message
-        const lastMessages = this.memory.messages.slice(-3);
-        resultMessage = lastMessages
-          .filter(m => m.role === 'assistant' || m.role === 'tool')
-          .map(m => m.content || '')
-          .join('\n');
+        // Get the active agent that just completed the step
+        const agent = this.agents[step.assignedAgent];
+
+        // First try to get the agent's reasoning from its memory
+        const agentReasoningMessage = agent.memory.messages
+          .filter(m => m.role === 'assistant')
+          .pop();
+          
+        let resultMessage = '';
+        
+        // If we found the agent's reasoning, use that
+        if (agentReasoningMessage?.content) {
+          resultMessage = agentReasoningMessage.content;
+        } 
+        // Otherwise fallback to the last few messages
+        else {
+          // Get the result from the last message
+          const lastMessages = this.memory.messages.slice(-3);
+          resultMessage = lastMessages
+            .filter(m => m.role === 'assistant' || m.role === 'tool')
+            .map(m => m.content || '')
+            .join('\n');
+        }
+          
+        // Add the agent's results to shared memory with proper attribution
+        if (resultMessage.trim().length > 0) {
+          this.sharedMemory.addMessageWithContributor(
+            {
+              role: 'assistant',
+              content: resultMessage,
+              timestamp: Date.now(),
+            },
+            step.assignedAgent
+          );
+        }
       }
 
       // Add step completion event
@@ -2590,13 +2612,13 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
 
   /**
    * Execute a step specifically with the browser agent
-   * Ensures the browser agent actually performs web searches and follows ReAct pattern
+   * Using the enhanced BrowserAgent class
    */
   private async executeStepWithBrowserAgent(step: PlanStep): Promise<string> {
     log.info(`Executing browser agent step: ${step.description}`);
 
     // Get the browser agent
-    const browserAgent = this.agents[AgentType.BROWSER] as ToolCallAgent;
+    const browserAgent = this.agents[AgentType.BROWSER] as BrowserAgent;
 
     // Store current state
     const previousActiveAgent = this.activeAgentType;
@@ -2612,168 +2634,16 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
       content: `Transferring task to browser agent for: ${step.description}`,
     });
 
-    // Extract search terms from the step description
-    const searchTerms = this.extractSearchTerms(step.description);
-
     // Get context from previous steps if available
     const relevantContext = this.getPreviousStepResults(step);
 
-    // Reset browser agent's memory to start fresh
-    if (this.privateMemories[AgentType.BROWSER]) {
-      this.privateMemories[AgentType.BROWSER] = new PrivateMemory('browser');
-      browserAgent.memory = this.privateMemories[AgentType.BROWSER];
-    }
-
-    // Directly create a clear and specific message for the browser agent with a ReAct pattern prompt
-    const directiveMessage = {
-      role: 'user' as const,
-      content: `TASK: ${step.description}
-
-            Your goal is to thoroughly research this topic using the web_search and browser tools, and provide comprehensive, useful information.
-
-            ${
-              relevantContext && relevantContext !== 'No relevant previous context found.'
-                ? `CONTEXT FROM PREVIOUS STEPS:\n${relevantContext}\n\n`
-                : ''
-            }
-
-            You MUST use the following process to complete this task:
-
-            1. First, use web_search to find information about ${searchTerms}
-            2. Analyze the search results to identify the most relevant sources
-            3. Navigate to specific websites using browser tool for deeper investigation
-            4. Gather specific data like prices, schedules, reviews, options, etc.
-            5. Synthesize all the information into a well-structured report
-
-            IMPORTANT:
-            - Make multiple web searches with different queries to get comprehensive information
-            - Use specific factual details (names, prices, locations, times, ratings)
-            - Include direct quotes and information from authoritative sources
-            - Organize your findings with clear headings, bullet points, and comparisons
-            - Include links to the sources you used
-            - If websites are blocking access or detecting bots, just use web search to gather information instead of repeatedly trying to visit the blocked sites
-
-            DO NOT just return raw search results. Provide a comprehensive analysis that directly addresses the task.`,
-    };
-
-    // Add to browser agent's memory
-    browserAgent.memory.addMessage(directiveMessage);
-
-    // Create a container to track all results from each think-act cycle
-    const allResults: string[] = [];
-
-    // Track error occurrences to detect blocking patterns
-    let browserErrorCount = 0;
-    let lastErrorMessage = '';
-
     try {
-      // First think-act cycle: initial research
-      await browserAgent.think();
-      const initialResult = await browserAgent.act();
-      allResults.push(initialResult);
-
-      // Check if there were navigation or bot detection errors
-      if (
-        initialResult.includes('bot detection') ||
-        initialResult.includes('blocked') ||
-        initialResult.includes('access denied') ||
-        (initialResult.includes('Navigation to') && initialResult.includes('failed'))
-      ) {
-        browserErrorCount++;
-        lastErrorMessage = initialResult;
-
-        log.warning(`Browser access issues detected: ${initialResult.substring(0, 100)}...`);
-
-        // If we're having blocking issues, add guidance to use web search instead
-        browserAgent.memory.addMessage({
-          role: 'user' as const,
-          content: `I noticed there are issues accessing some websites directly. Please focus on using web_search to gather information rather than attempting to visit websites that are blocking automated access.`,
-        });
-      }
-
-      // Check if web search was used
-      const usedWebSearch = initialResult.includes('web_search');
-
-      // If web search wasn't used, prompt for it specifically
-      if (!usedWebSearch) {
-        browserAgent.memory.addMessage({
-          role: 'user' as const,
-          content: `I noticed you didn't use the web_search tool. Please explicitly run a web search for information about "${searchTerms}" to gather real information from the web.`,
-        });
-
-        await browserAgent.think();
-        const searchResult = await browserAgent.act();
-        allResults.push(searchResult);
-
-        // Check again for errors
-        if (
-          searchResult.includes('bot detection') ||
-          searchResult.includes('blocked') ||
-          searchResult.includes('access denied') ||
-          (searchResult.includes('Navigation to') && searchResult.includes('failed'))
-        ) {
-          browserErrorCount++;
-          lastErrorMessage = searchResult;
-
-          // If we've had multiple blocking errors, exit early with what we have
-          if (browserErrorCount >= 2) {
-            log.warning(
-              `Multiple browser access issues detected. Finishing research with available information.`
-            );
-
-            // Format what we have and exit
-            const formattedResult = this.formatBrowserResults(...allResults);
-
-            // Add explanation about access issues
-            const resultWithExplanation = `
-# Research Results
-
-${formattedResult}
-
-## Note on Access Issues
-During research, multiple websites detected automated access and blocked browsing.
-The information provided is based on available data that could be gathered despite these limitations.
-`;
-
-            // Reset states
-            this.activeAgentType = previousActiveAgent;
-            this.sharedMemory.updateAgentState(AgentType.BROWSER, AgentState.IDLE);
-            this.sharedMemory.updateAgentState(AgentType.ORCHESTRATOR, AgentState.RUNNING);
-
-            // Add a transition back message mentioning the issues
-            this.memory.addMessage({
-              role: 'system',
-              content: `Browser agent encountered access limitations but completed the research with available information. Control returned to orchestrator.`,
-            });
-
-            return resultWithExplanation;
-          }
-        }
-      }
-
-      // Only proceed with more detailed research if we haven't hit too many errors
-      if (browserErrorCount < 2) {
-        // Second cycle: push for more details and synthesis
-        browserAgent.memory.addMessage({
-          role: 'user' as const,
-          content: `Thank you for the initial research. Now, please:
-
-                    1. Organize the information you've found
-                    2. Include specific details (prices, schedules, options, etc.)
-                    3. Compare different alternatives when applicable
-                    4. Make your response immediately useful for the plan
-
-                    Focus on providing actionable information rather than general statements.`,
-        });
-
-        await browserAgent.think();
-        const finalResult = await browserAgent.act();
-        allResults.push(finalResult);
-      }
-
-      // Format the results
-      const formattedResult = this.formatBrowserResults(...allResults);
-
+      // Use the enhanced executeResearch method
+      const comprehensiveResult = await browserAgent.executeResearch(
+        step.description,
+        relevantContext
+      );
+      
       // Reset states
       this.activeAgentType = previousActiveAgent;
       this.sharedMemory.updateAgentState(AgentType.BROWSER, AgentState.IDLE);
@@ -2785,7 +2655,9 @@ The information provided is based on available data that could be gathered despi
         content: `Browser agent completed the research task. Control returned to orchestrator.`,
       });
 
-      return formattedResult;
+      // Return the comprehensive result
+      return comprehensiveResult;
+
     } catch (error) {
       // Reset states on error
       this.activeAgentType = previousActiveAgent;
@@ -2808,77 +2680,11 @@ The information provided is based on available data that could be gathered despi
    * Format browser results into a cohesive response
    */
   private formatBrowserResults(...results: string[]): string {
-    // Filter out empty results
-    const validResults = results.filter(r => r && r.trim().length > 0);
-
-    if (validResults.length === 0) {
-      return 'No useful information found during research.';
+    const browserAgent = this.agents[AgentType.BROWSER] as BrowserAgent;
+    if (browserAgent && typeof browserAgent.formatBrowserResults === 'function') {
+      return browserAgent.formatBrowserResults(...results);
     }
-
-    if (validResults.length === 1) {
-      return validResults[0];
-    }
-
-    // MODIFIED: Better organize content from different websites
-    // Create a combined result with appropriate headings and site-specific content
-    let combined = '# Research Results\n\n';
-
-    // Keep track of websites we've seen
-    const websites: Record<string, string> = {};
-
-    // Extract website-specific content
-    validResults.forEach(result => {
-      // Extract URL if present
-      const urlMatch = result.match(/navigated to ([^"\n]+)/);
-      const url = urlMatch ? urlMatch[1] : '';
-
-      if (url) {
-        try {
-          // Get domain name for heading
-          const domain = new URL(url).hostname.replace('www.', '');
-
-          // Extract content if available
-          const contentMatch = result.match(/PAGE CONTENT:([\s\S]+)$/);
-          const content = contentMatch ? contentMatch[1].trim() : '';
-
-          if (content) {
-            // Store content by domain to combine multiple results from same site
-            if (!websites[domain]) {
-              websites[domain] = content;
-            } else {
-              websites[domain] += '\n\n' + content;
-            }
-          }
-        } catch (e) {
-          // If URL parsing fails, just use the result as is
-          combined += result + '\n\n';
-        }
-      } else if (result.includes('web_search')) {
-        // Handle search results differently
-        combined += '## Search Results\n\n' + result + '\n\n';
-      } else {
-        // Add other results as is
-        combined += result + '\n\n';
-      }
-    });
-
-    // Add website-specific content sections
-    Object.entries(websites).forEach(([domain, content]) => {
-      combined += `## Information from ${domain}\n\n`;
-
-      // Try to extract and format specific details
-      const formattedContent = this.extractRelevantDetails(content, domain);
-      combined += formattedContent + '\n\n';
-    });
-
-    // Add summary section if we have multiple sources
-    if (Object.keys(websites).length > 1) {
-      combined += '## Summary\n\n';
-      combined +=
-        'The research found multiple relevant sources of information. Key details have been compiled from various sources above.';
-    }
-
-    return combined;
+    return "Unable to format browser results - method moved to BrowserAgent class";
   }
 
   /**
@@ -3033,6 +2839,31 @@ The information provided is based on available data that could be gathered despi
       // Have the planning agent think and act
       await planningAgent.think();
       const planningResult = await planningAgent.act();
+      
+      // Extract the planning agent's reasoning/conclusion from its memory
+      const planningReasoningMessage = planningAgent.memory.messages
+        .filter(m => m.role === 'assistant')
+        .pop();
+        
+      // Collect the full reasoning chain from all assistant messages
+      const reasoningChain = planningAgent.memory.messages
+        .filter(m => m.role === 'assistant')
+        .map(m => m.content || '')
+        .join('\n\n=== NEXT REASONING STEP ===\n\n');
+        
+      // Use the agent's reasoning if available, otherwise use the raw result
+      const finalPlanningContent = planningReasoningMessage?.content || planningResult;
+      
+      // Create a comprehensive result that includes the chain of thought for documentation purposes
+      let comprehensiveResult = "# Planning Results\n\n";
+      
+      // Add the final reasoning/plan as a summary
+      comprehensiveResult += "## Final Plan\n";
+      comprehensiveResult += finalPlanningContent + "\n\n";
+      
+      // Add the full reasoning chain
+      comprehensiveResult += "## Planning Process\n";
+      comprehensiveResult += reasoningChain;
 
       // Reset states
       this.activeAgentType = previousActiveAgent;
@@ -3045,7 +2876,19 @@ The information provided is based on available data that could be gathered despi
         content: `Planning agent completed the task. Control returned to orchestrator.`,
       });
 
-      return planningResult;
+      // For shared memory, only store the agent's final synthesis
+      this.sharedMemory.addMessageWithContributor(
+        {
+          role: 'assistant',
+          // Only store the agent's final reasoning, not the full chain
+          content: finalPlanningContent,
+          timestamp: Date.now(),
+        },
+        AgentType.PLANNING
+      );
+
+      // Return the full comprehensive result for documentation purposes
+      return comprehensiveResult;
     } catch (error) {
       // Reset states on error
       this.activeAgentType = previousActiveAgent;
@@ -3059,6 +2902,16 @@ The information provided is based on available data that could be gathered despi
         role: 'system',
         content: `Error during planning agent execution: ${(error as Error).message}. Control returned to orchestrator.`,
       });
+
+      // Add error message to shared memory from the planning agent
+      this.sharedMemory.addMessageWithContributor(
+        {
+          role: 'assistant',
+          content: `Planning error: ${(error as Error).message}. Unable to complete planning task.`,
+          timestamp: Date.now(),
+        },
+        AgentType.PLANNING
+      );
 
       return `Error in planning step: ${(error as Error).message}`;
     }

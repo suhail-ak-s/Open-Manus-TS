@@ -3,30 +3,30 @@ import { ToolResult } from '../schema';
 import log from '../utils/logger';
 
 /**
- * Tool for terminating agent execution
+ * Tool for agents to signal task completion and provide final reasoning
  */
 export class TerminateTool extends BaseTool {
   name = 'terminate';
-  description = 'Finish the current task and end execution';
+  description = 'Signals that you have completed the assigned task and provides your final reasoning and conclusions';
   parameters: Record<string, ToolParameter> = {
-    reason: {
+    reasoning: {
       type: 'string',
-      description: 'Reason for terminating the execution',
+      description: 'Your complete final reasoning, analysis and conclusions about the task',
       required: true,
     },
   };
-  requiredParams = ['reason'];
+  requiredParams = ['reasoning'];
 
   /**
    * Execute the terminate action
    * @param input Terminate parameters
    */
-  async execute(input: { reason: string }): Promise<string | ToolResult> {
-    const { reason } = input;
+  async execute(input: { reasoning: string }): Promise<string | ToolResult> {
+    const { reasoning } = input;
 
-    log.info(`Terminating execution: ${reason}`);
+    log.info(`Task terminated with reasoning: ${reasoning.substring(0, 100)}...`);
 
-    return formatToolResult(`Task completed: ${reason}`);
+    return formatToolResult(`Task terminated with final reasoning: ${reasoning.substring(0, 50)}...`);
   }
 }
 

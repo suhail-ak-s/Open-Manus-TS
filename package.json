@@ -20,7 +20,10 @@
     "test:multi-agent": "ts-node src/test-multi-agent.ts",
     "test:viz": "ts-node src/test-visualization.ts",
     "test:planning": "ts-node src/test-structured-planning.ts",
-    "test:travel-planner": "ts-node src/test-travel-planner.ts"
+    "test:travel-planner": "ts-node src/test-travel-planner.ts",
+    "debug:browser": "ts-node src/debug-browser-agent.ts",
+    "debug:browser:watch": "nodemon --watch src --ext ts --exec ts-node src/debug-browser-agent.ts",
+    "test:terminate": "ts-node src/test-terminate-tool.ts"
   },
   "files": [
     "dist",

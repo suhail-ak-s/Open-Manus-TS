@@ -14,9 +14,37 @@ import visualizer, { EventType } from '../utils/visualization';
 import documentationGenerator from '../utils/documentation-generator';
 import { PrivateMemory } from './private-memory';
 import { PlanningAgent } from './planning-agent';
-import { StructuredPlan, PlanStep } from './structured-plan';
-import { TerminateTool } from '../tool/terminate';
+import { StructuredPlan } from './structured-plan';
+import { PlanStep } from './structured-plan';
 import { BrowserAgent } from './browser';
+
+// System prompt for the terminal agent
+const TERMINAL_SYSTEM_PROMPT = `
+You are a Terminal Agent within the OpenManus multi-agent system.
+Your role is to execute terminal commands and system operations.
+
+You can:
+1. Run shell commands
+2. Execute system utilities
+3. Manage files and directories
+4. Monitor system resources
+
+Be careful with destructive commands and always verify before executing them.
+`;
+
+// System prompt for the SWE agent
+const SWE_SYSTEM_PROMPT = `
+You are a Software Engineering Agent within the OpenManus multi-agent system.
+Your role is to handle all coding and software development tasks.
+
+You can:
+1. Write and modify code
+2. Debug issues
+3. Design software architectures
+4. Explain technical concepts
+
+Work closely with other agents to implement technical solutions.
+`;
 
 /**
  * System prompt for the multi-agent orchestrator
@@ -147,7 +175,16 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
     const tools = new ToolCollection([new WebSearchTool(), new BrowserTool()]);
 
     // Set up the shared memory
-    const sharedMemory = new SharedMemory();
+    const sharedMemory = new SharedMemory({
+      enableFileLogging: options.enableMemoryLogging || false,
+      logFilePath: options.memoryLogPath || undefined,
+      sessionId: options.taskId || `task_${Date.now()}`
+    });
+    
+    // Connect event handler to shared memory if provided
+    if (options.eventHandler) {
+      sharedMemory.setEventHandler(options.eventHandler);
+    }
 
     // Initialize the orchestrator
     super({
@@ -164,7 +201,7 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
 
     this.sharedMemory = sharedMemory;
     this.activeAgentType = AgentType.ORCHESTRATOR;
-    this.currentTaskId = '';
+    this.currentTaskId = options.taskId || `task_${Date.now()}`;
     this.hasPlan = false;
     this.taskStartTime = 0;
     this.eventHandler = options.eventHandler;
@@ -179,7 +216,7 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
     });
 
     // Initialize the visualizer with the task ID
-    visualizer.setTaskId(this.currentTaskId || `task_${Date.now()}`);
+    visualizer.setTaskId(this.currentTaskId);
 
     // Initialize specialized agents
     this.initializeAgents(options);
@@ -191,12 +228,13 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
       AgentState.IDLE,
       'Multi-agent system initialized'
     );
-
-    // Wrap memories with event emitters
-    this.wrapMemoryWithEvents();
-
-    // Initial memory event
-    this.emitMemoryEvent('memory_initialized');
+    
+    // Register as the active multi-agent for visualization
+    try {
+      (global as any).__activeMultiAgent = this;
+    } catch (error) {
+      // Ignore errors for browser environments
+    }
   }
 
   /**
@@ -268,96 +306,124 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
   }
 
   /**
-   * Create the planning agent
+   * Create the specialized planning agent
    */
   private createPlanningAgent(llm: LLM, options: any): PlanningAgent {
-    // Use our enhanced PlanningAgent instead of the ToolCallAgent
-    return new PlanningAgent(llm, {
+    log.info('Creating specialized Planning agent');
+
+    // Create planning agent with our delta-enabled shared memory
+    const agent = new PlanningAgent({
+      llm,
+      memory: this.sharedMemory, // Pass shared memory for delta events
+      eventHandler: this.eventHandler, // Pass event handler for delta events
+      maxSteps: 10,
+      maxTokens: 2048,
       ...options,
-      memory: this.sharedMemory,
     });
+
+    // Register in shared memory
+    this.sharedMemory.registerAgent(AgentType.PLANNING, AgentState.IDLE, {
+      name: 'Planning Agent',
+      role: 'Task planner',
+      capabilities: ['create_structured_plans', 'revise_plans', 'analyze_requirements']
+    });
+
+    return agent;
   }
 
   /**
-   * Create the SWE (software engineering) agent
+   * Create the specialized SWE agent
    */
   private createSWEAgent(llm: LLM, options: any): ToolCallAgent {
-    const sweSystemPrompt = `
-        You are a Software Engineering Agent within the OpenManus multi-agent system.
-        Your role is to handle all coding and software development tasks.
+    log.info('Creating specialized Software Engineering agent');
 
-        You can:
-        1. Write and modify code
-        2. Debug issues
-        3. Design software architectures
-        4. Explain technical concepts
+    // Create SWE agent
+    const tools = new ToolCollection();
+    
+    // Add file operation tools
+    const fileTools = [new ReadFileTool(), new WriteFileTool(), new ListDirectoryTool()];
+    tools.addTools(fileTools);
 
-        Work closely with other agents to implement technical solutions.
-        `;
-
-    // SWE agent needs file operations tools
-    const sweTools = new ToolCollection([
-      new ReadFileTool(),
-      new WriteFileTool(),
-      new ListDirectoryTool(),
-    ]);
-
-    return new ToolCallAgent({
-      name: 'SWEAgent',
-      description: 'Handles software engineering tasks',
-      systemPrompt: sweSystemPrompt,
-      maxSteps: 10,
-      memory: this.sharedMemory,
-      llm,
-      toolChoices: 'auto',
-      availableTools: sweTools,
-    });
-  }
-
-  /**
-   * Create the browser agent
-   */
-  private createBrowserAgent(llm: LLM, options: any): ToolCallAgent {
-    // Use our enhanced BrowserAgent class instead of ToolCallAgent
-    return new BrowserAgent({
+    // Create specialized agent to handle software engineering tasks
+    const agent = new ToolCallAgent({
       ...options,
-      memory: this.sharedMemory, // Provide shared memory
-      privateMemory: new PrivateMemory('browser'),
+      name: 'SWEAgent',
+      description: 'Software engineering specialist',
+      systemPrompt: SWE_SYSTEM_PROMPT,
       llm,
+      availableTools: tools,
+      memory: this.sharedMemory,
+      maxSteps: 20,
       eventHandler: this.eventHandler,
     });
+
+    // Register in shared memory
+    this.sharedMemory.registerAgent(AgentType.SWE, AgentState.IDLE, {
+      name: 'Software Engineering Agent',
+      role: 'Code specialist',
+      capabilities: ['read_code', 'write_code', 'debug', 'implement_features']
+    });
+
+    return agent;
   }
 
   /**
-   * Create the terminal agent
+   * Create the specialized browser agent
+   */
+  private createBrowserAgent(llm: LLM, options: any): ToolCallAgent {
+    log.info('Creating specialized Browser agent');
+
+    // Create browser agent with our delta-enabled shared memory
+    const agent = new BrowserAgent({
+      llm,
+      memory: this.sharedMemory, // Pass shared memory for delta events
+      eventHandler: this.eventHandler, // Pass event handler for delta events
+      maxSteps: 15,
+      maxTokens: 2048,
+      ...options,
+    });
+
+    // Register in shared memory
+    this.sharedMemory.registerAgent(AgentType.BROWSER, AgentState.IDLE, {
+      name: 'Browser Agent',
+      role: 'Web researcher',
+      capabilities: ['search', 'browse', 'extract_info']
+    });
+
+    return agent;
+  }
+
+  /**
+   * Create the specialized terminal agent
    */
   private createTerminalAgent(llm: LLM, options: any): ToolCallAgent {
-    const terminalSystemPrompt = `
-        You are a Terminal Agent within the OpenManus multi-agent system.
-        Your role is to execute terminal commands and system operations.
+    log.info('Creating specialized Terminal agent');
 
-        You can:
-        1. Run shell commands
-        2. Execute system utilities
-        3. Manage files and directories
-        4. Monitor system resources
+    // Create terminal agent
+    const tools = new ToolCollection();
+    tools.addTool(new TerminalTool());
 
-        Be careful with destructive commands and always verify before executing them.
-        `;
-
-    // Terminal agent needs terminal tools
-    const terminalTools = new ToolCollection([new TerminalTool()]);
-
-    return new ToolCallAgent({
+    // Create specialized agent to handle terminal commands
+    const agent = new ToolCallAgent({
+      ...options,
       name: 'TerminalAgent',
-      description: 'Handles terminal commands and system operations',
-      systemPrompt: terminalSystemPrompt,
-      maxSteps: 8,
-      memory: this.sharedMemory,
+      description: 'Terminal command specialist',
+      systemPrompt: TERMINAL_SYSTEM_PROMPT,
       llm,
-      toolChoices: 'auto',
-      availableTools: terminalTools,
+      availableTools: tools,
+      memory: this.sharedMemory,
+      maxSteps: 15,
+      eventHandler: this.eventHandler,
     });
+
+    // Register in shared memory
+    this.sharedMemory.registerAgent(AgentType.TERMINAL, AgentState.IDLE, {
+      name: 'Terminal Agent',
+      role: 'Command-line specialist',
+      capabilities: ['run_commands', 'install_packages', 'file_operations']
+    });
+
+    return agent;
   }
 
   /**
@@ -1273,17 +1339,6 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
 
     // Store current request for reference
     const currentRequest = request;
-
-    // Emit an initial memory state event to populate the UI
-    this.emitMemoryEvent('run_started');
-
-    // Register as the active multi-agent for visualization
-    // This happens on each run to ensure the visualizer has the latest reference
-    try {
-      (global as any).__activeMultiAgent = this;
-    } catch (error) {
-      // Ignore errors for browser environments
-    }
 
     // Initialize documentation generator
     documentationGenerator.initTask(this.currentTaskId, currentRequest);
@@ -3076,164 +3131,6 @@ export class MultiAgentOrchestrator extends ToolCallAgent {
 
     // Return the first match found, or the entire description if no match
     return aboutMatch?.[1] || forMatch?.[1] || researchMatch?.[1] || findMatch?.[1] || description;
-  }
-
-  private emitMemoryEvent(
-    type: string,
-    agentType: AgentType | null = null,
-    accessor: AgentType | null = null
-  ): void {
-    if (this.eventHandler) {
-      try {
-        // Create memory snapshot for the event
-        const sharedMemorySnapshot = {
-          // Convert key-value entries to an object
-          ...Object.fromEntries(
-            Object.entries(this.sharedMemory).filter(
-              ([key]) => typeof key === 'string' && !key.startsWith('_')
-            )
-          ),
-        };
-
-        // Gather private memories
-        const privateMemoriesSnapshot: Record<string, any> = {};
-        Object.entries(this.privateMemories).forEach(([agent, memory]) => {
-          if (memory) {
-            // Convert key-value entries to an object
-            privateMemoriesSnapshot[agent] = {
-              ...Object.fromEntries(
-                Object.entries(memory).filter(
-                  ([key]) => typeof key === 'string' && !key.startsWith('_')
-                )
-              ),
-            };
-          }
-        });
-
-        // Debug logging to verify events are being emitted
-        log.debug(
-          `Emitting memory event (${type}). Active agent: ${this.activeAgentType}, Accessor: ${accessor || 'none'}`
-        );
-
-        // Emit the memory event
-        this.eventHandler({
-          type: 'memory_update',
-          agent: 'orchestrator',
-          state: 'running',
-          message: `Memory ${type}`,
-          details: {
-            type,
-            sharedMemory: sharedMemorySnapshot,
-            privateMemories: privateMemoriesSnapshot,
-            activeAgent: this.activeAgentType,
-            accessor: accessor || this.activeAgentType,
-            timestamp: Date.now(),
-          },
-        });
-      } catch (error) {
-        log.error(
-          `Error emitting memory event: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-    }
-  }
-
-  private wrapMemoryWithEvents(): void {
-    // Add memory access tracking for shared memory
-    // Wrap key methods to emit events when memory is accessed
-    const wrapSharedMemoryMethods = () => {
-      // Log available methods for debugging
-      const availableMethods = Object.getOwnPropertyNames(
-        Object.getPrototypeOf(this.sharedMemory)
-      ).filter(name => typeof this.sharedMemory[name] === 'function');
-      log.debug(`Available shared memory methods: ${availableMethods.join(', ')}`);
-
-      // Focus on methods that definitely exist in Memory parent class
-      const methodsToWrap = ['getItem', 'setItem', 'addMessage'];
-
-      methodsToWrap.forEach(method => {
-        if (typeof this.sharedMemory[method] === 'function') {
-          log.debug(`Wrapping shared memory method: ${method}`);
-          const originalMethod = this.sharedMemory[method].bind(this.sharedMemory);
-          this.sharedMemory[method] = (...args: any[]) => {
-            const result = originalMethod(...args);
-            // Only emit for methods that change state
-            const accessType = method.startsWith('get')
-              ? 'shared_memory_accessed'
-              : 'shared_memory_updated';
-            this.emitMemoryEvent(accessType, null, this.activeAgentType);
-            return result;
-          };
-        } else {
-          log.warning(`Tried to wrap non-existent shared memory method: ${method}`);
-        }
-      });
-
-      // Emit an initial memory event to populate the UI
-      this.emitMemoryEvent('shared_memory_initialized');
-    };
-
-    // Wrap private memory methods
-    const wrapPrivateMemoryMethods = () => {
-      Object.entries(this.privateMemories).forEach(([agentType, memory]) => {
-        if (!memory) return;
-
-        // Standard Memory methods
-        const standardMethods = ['getItem', 'setItem', 'addMessage'];
-
-        // PrivateMemory specific methods
-        const privateMethods = [
-          'setContext',
-          'getContext',
-          'addCapability',
-          'hasCapability',
-          'getCapabilities',
-          'addToWorkingMemory',
-          'getWorkingMemory',
-          'clearWorkingMemory',
-          'getLatestReasoning',
-          'recordReasoning',
-        ];
-
-        // Log available methods for debugging
-        const availableMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(memory)).filter(
-          name => typeof memory[name] === 'function'
-        );
-        log.debug(
-          `Available private memory methods for ${agentType}: ${availableMethods.join(', ')}`
-        );
-
-        // Combine all methods to wrap
-        const allMethodsToWrap = [...standardMethods, ...privateMethods];
-
-        allMethodsToWrap.forEach(method => {
-          if (typeof memory[method] === 'function') {
-            log.debug(`Wrapping private memory method for ${agentType}: ${method}`);
-            const originalMethod = memory[method].bind(memory);
-            memory[method] = (...args: any[]) => {
-              const result = originalMethod(...args);
-              // Determine if this is a read or write operation
-              const isReadOperation = ['get', 'has'].some(prefix => method.startsWith(prefix));
-              const accessType = isReadOperation
-                ? 'private_memory_accessed'
-                : 'private_memory_updated';
-              this.emitMemoryEvent(accessType, agentType as AgentType, this.activeAgentType);
-              return result;
-            };
-          }
-        });
-
-        // Emit an initial memory event for this agent's private memory
-        this.emitMemoryEvent('private_memory_initialized', agentType as AgentType);
-      });
-    };
-
-    // Apply the wrappers
-    wrapSharedMemoryMethods();
-    wrapPrivateMemoryMethods();
-
-    // Initial memory event
-    this.emitMemoryEvent('memory_initialized');
   }
 }
 

@@ -92,49 +92,7 @@ export class PlanningAgent extends ToolCallAgent {
     this.privateMemory.addCapability('analyze_requirements');
     this.privateMemory.addCapability('decompose_tasks');
 
-    // Manually emit a memory event if eventHandler is available
-    this.emitMemoryEvent('planning_agent_initialized');
-
     log.info('Enhanced Planning Agent initialized');
-  }
-
-  /**
-   * Emit a memory event to update the UI
-   */
-  private emitMemoryEvent(eventType: string): void {
-    if (this.eventHandler) {
-      try {
-        // Create memory snapshot
-        const memory = {
-          context: this.privateMemory['context'] || {},
-          workingMemory: this.privateMemory['workingMemory'] || [],
-          capabilities: Array.from(this.privateMemory['capabilities'] || []),
-          messages: this.privateMemory.messages || [],
-        };
-
-        // Emit event
-        this.eventHandler({
-          type: 'memory_update',
-          agent: AgentType.PLANNING,
-          state: this.state,
-          message: `Planning memory ${eventType}`,
-          details: {
-            type: eventType,
-            privateMemories: {
-              [AgentType.PLANNING]: memory,
-            },
-            activeAgent: AgentType.PLANNING,
-            timestamp: Date.now(),
-          },
-        });
-
-        log.debug(`Emitted planning memory event: ${eventType}`);
-      } catch (error) {
-        log.error(
-          `Error emitting memory event: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-    }
   }
 
   /**
@@ -154,9 +112,6 @@ export class PlanningAgent extends ToolCallAgent {
       timestamp: Date.now(),
       request,
     });
-
-    // Emit memory event after updating private memory
-    this.emitMemoryEvent('creating_plan');
 
     // Add request to memory
     this.memory.addMessage({
@@ -326,9 +281,6 @@ export class PlanningAgent extends ToolCallAgent {
       this.privateMemory.addCapability(`work_with_${agentType.toLowerCase()}`);
     });
 
-    // Emit memory event with updated plan details
-    this.emitMemoryEvent('plan_parsed');
-
     return plan;
   }
 
@@ -347,9 +299,6 @@ export class PlanningAgent extends ToolCallAgent {
       results: executionResults,
       timestamp: Date.now(),
     });
-
-    // Emit memory event for refinement
-    this.emitMemoryEvent('refining_plan');
 
     // Add request to memory
     this.memory.addMessage({

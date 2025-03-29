@@ -4,6 +4,11 @@ import { EventType } from '../../utils/visualization';
 import { StreamController } from '../controllers/stream-controller';
 import { StreamEventType } from '../models/stream-event';
 import log from '../../utils/logger';
+import config from '../../config';
+import dotenv from 'dotenv';
+
+// Ensure environment variables are loaded
+dotenv.config();
 
 // Map of session IDs to agent instances
 const sessionAgents: Map<string, MultiAgentOrchestrator> = new Map();
@@ -22,10 +27,13 @@ export class AgentStreamService {
     // Clean up any existing agent for this session
     this.cleanupAgent(sessionId);
 
-    // Create a new agent
+    // Create a new agent with memory logging from environment variables
     const agent = new MultiAgentOrchestrator({
       maxSteps: 30,
       eventHandler: (event: any) => this.handleAgentEvent(sessionId, event),
+      enableMemoryLogging: process.env.ENABLE_MEMORY_LOGGING === 'true',
+      memoryLogPath: process.env.MEMORY_LOG_PATH || './memory-logs',
+      taskId: sessionId,
     });
 
     // Store the agent
@@ -248,149 +256,101 @@ export class AgentStreamService {
    *
    * @param event The agent event
    * @param sessionId The session ID
-   * @returns Event details
+   * @returns The formatted event details
    */
   private static createEventDetails(event: any, sessionId: string): any {
-    // Default details
-    let details: any = {
+    // Base details that are included in all events
+    const details: any = {
       sessionId,
-      originalEvent: event.type,
+      agent: event.agent || AgentType.ORCHESTRATOR,
+      state: event.state || AgentState.RUNNING,
     };
 
-    // Add specific details based on event type
-    if (event.type === 'memory_update') {
-      // Memory events contain shared and private memory snapshots
-      details = {
-        ...details,
-        memoryType: event.details.type,
-        sharedMemory: event.details.sharedMemory,
-        privateMemories: event.details.privateMemories,
-        activeAgent: event.details.activeAgent,
-        accessor: event.details.accessor,
-        timestamp: event.details.timestamp,
-      };
-    } else if (event.type === 'browser_navigate') {
-      // Browser navigation events
-      details = {
-        ...details,
-        url: event.details.url,
-        title: event.details.title,
-      };
-    } else if (event.type === 'browser_search') {
-      // Browser search events
-      details = {
-        ...details,
-        query: event.details.query,
-      };
-    } else if (event.type === 'browser_search_results') {
-      // Browser search results events
-      details = {
-        ...details,
-        query: event.details.query,
-        results: event.details.results,
-      };
-    } else if (event.type === 'browser_screenshot') {
-      // Browser screenshot events
-      details = {
-        ...details,
-        url: event.details.url,
-        imageData: event.details.imageData,
-      };
-    } else if (event.type === 'browser_content') {
-      // Browser content events
-      details = {
-        ...details,
-        url: event.details.url,
-        content: event.details.content,
-      };
-    } else if (event.type === 'browser_error') {
-      // Browser error events
-      details = {
-        ...details,
-        error: event.details.error,
-        url: event.details.url,
-      };
-    } else if (event.type === EventType.AGENT_THINKING) {
-      // Agent thinking events
-      details = {
-        ...details,
-        thinking: event.details?.thinking || event.message,
-        context: event.details?.context,
-      };
-    } else if (event.type === 'tool_call' || event.type === 'tool_use') {
-      // Tool call events
-      details = {
-        ...details,
-        tool: event.details?.tool,
-        inputs: event.details?.inputs,
-        action: `Using tool: ${event.details?.tool || 'unknown'}`,
-      };
-    } else if (event.type === 'tool_result') {
-      // Tool result events
-      details = {
-        ...details,
-        tool: event.details?.tool,
-        result: event.details?.result,
-        action: `Tool result: ${event.details?.tool || 'unknown'}`,
-      };
+    // For browser-specific events, add URL info if available
+    if (
+      event.type === 'browser_navigate' ||
+      event.type === 'browser_screenshot' ||
+      event.type === 'browser_content'
+    ) {
+      details.url = event.details?.url;
+      details.title = event.details?.title;
+      details.originalEvent = event.type;
+    }
 
-      // Special handling for web_search results
-      if (event.details?.tool === 'web_search') {
-        // Try to extract search results from the result text
+    // For search events, include the query
+    if (event.type === 'browser_search' || event.type === 'browser_search_results') {
+      details.query = event.details?.query;
+      details.originalEvent = event.type;
+    }
+
+    // For tool usage, capture tool info
+    if (event.type === 'tool_use') {
+      details.tool = event.details?.tool;
+      details.action = event.details?.action;
+      details.arguments = event.details?.arguments;
+      details.originalEvent = event.type;
+    }
+
+    // For tool results, capture the returned data
+    if (event.type === 'tool_result') {
+      details.tool = event.details?.tool;
+      details.result = event.details?.result;
+      details.originalEvent = event.type;
+
+      // Special handling for browser screenshots
+      if (
+        event.details?.tool === 'browser' &&
+        event.details?.imageData &&
+        typeof event.details.imageData === 'string'
+      ) {
+        details.imageData = event.details.imageData;
+        details.url = event.details?.url;
+        details.title = event.details?.title;
+      }
+
+      // Special handling for web search results
+      if (
+        event.details?.tool === 'web_search' &&
+        event.details?.fullResult &&
+        typeof event.details.fullResult === 'string'
+      ) {
         try {
-          // First check if we have structured search results
-          if (event.details.search_results && Array.isArray(event.details.search_results)) {
-            details.results = event.details.search_results.map((item: any) => ({
-              title: item.title || '',
-              url: item.url || item.link || '',
-              snippet: item.snippet || '',
-              favicon:
-                item.favicon ||
-                `https://www.google.com/s2/favicons?domain=${new URL(item.url || item.link || '').hostname}`,
-            }));
-
-            if (event.details.query) {
-              details.query = event.details.query;
-            }
-          } else if (event.details.result) {
-            // Try to extract from HTML comment format in the result text
-            const extractedResults = this.extractSearchResultsFromText(event.details.result);
-            if (extractedResults && extractedResults.length > 0) {
-              details.results = extractedResults;
-
-              // Try to extract query
-              const queryMatch = event.details.result.match(/Search results for "([^"]+)"/);
-              if (queryMatch && queryMatch[1]) {
-                details.query = queryMatch[1];
-              }
-            }
-          }
-
-          // If we extracted results, log success
-          if (details.results && details.results.length > 0) {
-            log.info(
-              `Successfully extracted ${details.results.length} search results for UI display`
-            );
-          } else {
-            log.warning(`Failed to extract search results from web_search tool result`);
-          }
+          // Extract and structure search results
+          details.search_results = this.extractSearchResultsFromText(event.details.fullResult);
+          details.query = event.details?.arguments?.query || '';
+          details.fullResult = event.details.fullResult;
         } catch (error) {
-          log.error(`Error processing search results: ${(error as Error).message}`);
+          log.warning(`Error extracting search results: ${error}`);
+          details.error = `Error extracting search results: ${(error as Error).message}`;
+          details.fullResult = event.details.fullResult;
         }
       }
-    } else if (event.type === 'browser_action' || event.type === 'browser_action_result') {
-      // Browser action events
-      details = {
-        ...details,
-        action: event.details?.action || 'Browser action',
-        result: event.details?.result,
-      };
-    } else {
-      // Generic events - include all details
-      details = {
-        ...details,
-        ...event.details,
-      };
+    }
+
+    // Special handling for memory updates
+    if (event.type === 'memory_update') {
+      // Use the internal memory update type for more specific UI handling
+      details.type = event.details?.type || 'update';
+      
+      // For delta updates, include only what changed
+      if (event.details?.delta) {
+        details.delta = event.details.delta;
+        details.accessor = event.details.accessor;
+        details.timestamp = event.details.timestamp;
+      } 
+      // For full state updates (legacy), include everything
+      else {
+        details.sharedMemory = event.details?.sharedMemory || {};
+        details.privateMemories = event.details?.privateMemories || {};
+        details.activeAgent = event.details?.activeAgent;
+        details.accessor = event.details?.accessor;
+        details.timestamp = event.details?.timestamp || Date.now();
+      }
+    }
+
+    // Include original details when appropriate
+    if (event.details && !event.details.tool && !event.details.type) {
+      details.details = event.details;
     }
 
     return details;

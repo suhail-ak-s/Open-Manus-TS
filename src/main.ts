@@ -26,7 +26,9 @@ import { FileSaverTool } from './tool/file-saver';
 import { ChatCompletionTool } from './tool/chat-completion';
 import { FlowFactory, FlowType } from './flow';
 import { BaseAgent } from './agent/base';
+import { SharedMemory } from './agent/shared-memory';
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Ensure environment variables are loaded
 dotenv.config();
@@ -52,6 +54,8 @@ export async function runManus(options: {
   maxObserve?: number;
   stream?: boolean;
   sandbox?: boolean;
+  enableMemoryLogging?: boolean;
+  memoryLogPath?: string;
 }): Promise<string> {
   const {
     request = 'How can I help you today?',
@@ -62,9 +66,14 @@ export async function runManus(options: {
     maxObserve = 8000,
     stream = true,
     sandbox = process.env.SANDBOX_MODE === 'true',
+    enableMemoryLogging = process.env.ENABLE_MEMORY_LOGGING === 'true' || false,
+    memoryLogPath = process.env.MEMORY_LOG_PATH || path.join(process.cwd(), 'memory-logs'),
   } = options;
 
   logger.info(`Starting OpenManus with model: ${model}${sandbox ? ' in sandbox mode' : ''}`);
+  if (enableMemoryLogging) {
+    logger.info(`Memory logging enabled, logs will be stored at: ${memoryLogPath}`);
+  }
 
   // Create tool collection based on requested tools
   const toolCollection = new ToolCollection();
@@ -98,6 +107,13 @@ export async function runManus(options: {
     toolCollection.addTool(new NodeREPLTool());
   }
 
+  // Initialize shared memory with logging options
+  const sharedMemory = new SharedMemory({
+    enableFileLogging: enableMemoryLogging,
+    logFilePath: memoryLogPath,
+    sessionId: `manus_session_${Date.now()}`
+  });
+
   // Create and configure the agent
   const agent = new ManusAgent({
     name: 'OpenManus',
@@ -106,6 +122,7 @@ export async function runManus(options: {
     model,
     maxSteps,
     maxObserve,
+    memory: sharedMemory
   });
 
   // Send the initial request to start the conversation
@@ -167,6 +184,8 @@ export async function runPlanningFlow(options: {
   executors?: string[];
   planId?: string;
   sandbox?: boolean;
+  enableMemoryLogging?: boolean;
+  memoryLogPath?: string;
 }): Promise<string> {
   const {
     request,
@@ -174,9 +193,14 @@ export async function runPlanningFlow(options: {
     executors,
     planId,
     sandbox = process.env.SANDBOX_MODE === 'true',
+    enableMemoryLogging = process.env.ENABLE_MEMORY_LOGGING === 'true' || false,
+    memoryLogPath = process.env.MEMORY_LOG_PATH || path.join(process.cwd(), 'memory-logs'),
   } = options;
 
   logger.info(`Starting OpenManus Planning Flow${sandbox ? ' in sandbox mode' : ''}`);
+  if (enableMemoryLogging) {
+    logger.info(`Memory logging enabled, logs will be stored at: ${memoryLogPath}`);
+  }
 
   // Create a default agent if not provided
   const flowAgents =
@@ -191,6 +215,9 @@ export async function runPlanningFlow(options: {
   if (executors) flowOptions.executors = executors;
   if (planId) flowOptions.planId = planId;
   flowOptions.sandbox = sandbox;
+  flowOptions.enableMemoryLogging = enableMemoryLogging;
+  flowOptions.memoryLogPath = memoryLogPath;
+  flowOptions.taskId = planId;
 
   // Create the planning flow
   const planningFlow = FlowFactory.createFlow(FlowType.PLANNING, flowAgents, flowOptions);
@@ -210,6 +237,8 @@ async function main() {
   let flowType: string | null = null;
   let toolParam: string | null = null;
   let request: string;
+  let enableMemoryLogging: boolean = process.env.ENABLE_MEMORY_LOGGING === 'true' || false;
+  let memoryLogPath: string | undefined = process.env.MEMORY_LOG_PATH;
 
   // Process command line arguments
   const processedArgs = [];
@@ -218,6 +247,10 @@ async function main() {
       flowType = arg.substring(7);
     } else if (arg.startsWith('--tool=')) {
       toolParam = arg.substring(7);
+    } else if (arg.startsWith('--log-memory')) {
+      enableMemoryLogging = true;
+    } else if (arg.startsWith('--memory-log-path=')) {
+      memoryLogPath = arg.substring(17);
     } else {
       processedArgs.push(arg);
     }
@@ -238,6 +271,8 @@ async function main() {
       result = await runPlanningFlow({
         request,
         sandbox: false,
+        enableMemoryLogging,
+        memoryLogPath,
       });
     } else {
       // Determine which tools to include based on the request
@@ -280,6 +315,8 @@ async function main() {
         request,
         tools,
         maxSteps: 15,
+        enableMemoryLogging,
+        memoryLogPath,
       });
     }
 

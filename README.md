@@ -33,6 +33,12 @@ OpenManus TypeScript is a modular agentic system that provides a framework for b
   - Visualization of agent reasoning processes
   - Comparison of agent behaviors
 
+- **Memory Logging**:
+  - File-based logging of shared memory updates
+  - Session-based organization of memory logs
+  - Complete snapshots of agent state transitions
+  - Detailed debug information for agent interactions
+
 ## 📋 Prerequisites
 
 - Node.js 18 or higher
@@ -65,7 +71,11 @@ OPENAI_API_KEY=your_api_key_here
 MODEL=gpt-4o
 SANDBOX_MODE=false
 LOG_LEVEL=info
+ENABLE_MEMORY_LOGGING=true
+MEMORY_LOG_PATH=./memory-logs
 ```
+
+Memory logging is primarily configured through the `.env` file. Setting `ENABLE_MEMORY_LOGGING=true` enables logging of all shared memory operations, and `MEMORY_LOG_PATH` controls where these logs are stored. You can still override these settings with command line arguments if needed.
 
 ### Running the Server
 
@@ -77,7 +87,9 @@ npm run server
 npm run dev:server
 ```
 
-Once the server is running, visit [http://localhost:8080](http://localhost:8080) to access the web interface.
+Memory logging is configured exclusively through the `.env` file. Set `ENABLE_MEMORY_LOGGING=true` to enable logging, and `MEMORY_LOG_PATH` to specify where log files should be stored.
+
+Once the server is running, visit [http://localhost:8080](http://localhost:8080) to access the web interface. If memory logging is enabled, memory logs will be available at [http://localhost:8080/memory-logs](http://localhost:8080/memory-logs).
 
 ### Building the Project
 
@@ -123,6 +135,37 @@ OpenManus uses a hub and spoke orchestration model where:
 - The **Spokes** (specialized agents) focus on specific tasks or capabilities
 
 This architecture enables complex multi-agent workflows where agents can collaborate on solving problems.
+
+### Memory Logging System
+
+The memory logging system captures detailed information about the shared memory state and updates:
+
+```typescript
+// Memory logging is configured via .env file
+ENABLE_MEMORY_LOGGING=true
+MEMORY_LOG_PATH=./memory-logs
+
+// You can also configure it programmatically
+const sharedMemory = new SharedMemory({
+  enableFileLogging: true,
+  logFilePath: './memory-logs',
+  sessionId: 'custom-session-id'
+});
+```
+
+Memory logs are organized by session and include:
+- Initial agent registrations
+- Agent state transitions
+- Message additions to shared memory
+- Plan updates and modifications
+- Complete memory snapshots for each state change
+
+These logs are useful for:
+- Debugging complex agent interactions
+- Auditing agent decision-making processes
+- Recovering from failures
+- Analyzing agent performance and behavior
+- Visualizing the flow of information between agents
 
 ### Tool System
 
@@ -254,3 +297,60 @@ The multi-agent system includes:
 - Visualization tools to monitor agent activities
 
 For more details, see the [Multi-Agent Architecture Documentation](documentation/MULTI_AGENT_ARCHITECTURE.md).
+
+## 💾 Memory Logging
+
+OpenManus includes a comprehensive memory logging system that captures all shared memory updates to disk. This is useful for:
+
+- Debugging agent behavior
+- Analyzing decision-making processes
+- Auditing agent actions
+- Recovering from failures
+
+### Log Structure
+
+Memory logs are organized by sessions, with each session containing:
+
+```
+memory-logs/
+├── session_12345678/
+│   ├── session-info.json            # Session metadata
+│   ├── current_memory_state.json    # Latest memory snapshot
+│   ├── memory_message_added_*.json  # Individual memory delta events
+│   ├── memory_agent_state_*.json    # Agent state transitions
+│   └── ...
+└── session_87654321/
+    └── ...
+```
+
+### Enabling Memory Logging
+
+Memory logging can be enabled in two ways:
+
+1. **Environment Variables** (Recommended):
+   ```
+   ENABLE_MEMORY_LOGGING=true
+   MEMORY_LOG_PATH=./memory-logs
+   ```
+
+2. **Programmatically**:
+   ```typescript
+   import { runManus } from 'openmanus';
+   
+   await runManus({
+     request: 'Your request here',
+     enableMemoryLogging: true,
+     memoryLogPath: './custom-logs'
+   });
+   ```
+
+3. **At Runtime**:
+   ```typescript
+   import { SharedMemory } from 'openmanus';
+   
+   const memory = new SharedMemory();
+   memory.setFileLogging(true, {
+     logFilePath: './custom-logs', 
+     sessionId: 'custom_session'
+   });
+   ```

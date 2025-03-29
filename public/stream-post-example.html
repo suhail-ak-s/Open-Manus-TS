@@ -282,7 +282,7 @@
             color: #ef6c00;
         }
 
-        /* Main layout with memory panel */
+        /* Page layout */
         .page-layout {
             display: flex;
             width: 100%;
@@ -291,137 +291,204 @@
 
         .main-content {
             flex: 1;
-            max-width: 1000px;
             margin: 0 auto;
         }
+        
+        .panels-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .left-panel {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .right-panel {
+            flex: 1;
+            min-width: 0;
+        }
 
+        /* Memory panel styling */
         .memory-panel {
-            width: 300px;
-            background-color: #f8f9fa;
-            border-left: 1px solid #e1e4e8;
-            padding: 15px;
-            position: fixed;
-            right: 0;
-            top: 0;
-            bottom: 0;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-height: 600px;
             overflow-y: auto;
-            font-family: monospace;
-            font-size: 12px;
-            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
+            padding: 15px;
+        }
+
+        .memory-header {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
         }
 
         .memory-section {
             margin-bottom: 15px;
-            background-color: white;
-            border: 1px solid #e1e4e8;
-            border-radius: 4px;
-            overflow: hidden;
+            padding: 5px;
         }
 
-        .memory-header {
-            padding: 8px 10px;
-            background-color: #f1f8ff;
-            border-bottom: 1px solid #e1e4e8;
-            font-weight: bold;
+        .memory-section-title {
+            font-weight: 600;
             font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .memory-header .badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            background-color: #e1e4e8;
-            color: #24292e;
-        }
-
-        .memory-header .badge-active {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .memory-content {
-            padding: 8px 10px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .memory-key {
-            font-weight: bold;
-            color: #0366d6;
-            margin-bottom: 2px;
-        }
-
-        .memory-value {
             margin-bottom: 8px;
-            word-break: break-word;
-            white-space: pre-wrap;
-            color: #24292e;
-            font-size: 11px;
-            background-color: #f6f8fa;
-            padding: 4px;
-            border-radius: 2px;
+            color: #444;
         }
 
-        .memory-empty {
-            color: #6a737d;
-            font-style: italic;
-            padding: 8px;
-            text-align: center;
-        }
-
-        .memory-access {
-            font-size: 10px;
-            color: #6a737d;
-            margin-top: 2px;
-            text-align: right;
+        .agent-state-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
         }
 
         .agent-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            background-color: #f0f0f0;
+            color: #555;
+        }
+
+        .agent-pill.active {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #bbdefb;
+        }
+
+        .agent-state {
             display: inline-block;
-            padding: 2px 6px;
-            border-radius: 10px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 3px;
+        }
+
+        .agent-state-idle {
+            background-color: #9e9e9e;
+        }
+
+        .agent-state-running {
+            background-color: #4caf50;
+            animation: pulse 1.5s infinite;
+        }
+
+        .agent-state-error {
+            background-color: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .memory-message {
+            margin: 8px 0;
+            padding: 8px 10px;
+            border-radius: 4px;
+            border-left: 3px solid #ddd;
+            background-color: #f9f9f9;
+            font-size: 13px;
+        }
+
+        .memory-message-role {
+            font-weight: bold;
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .memory-message-content {
+            margin-top: 3px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .memory-message-meta {
+            font-size: 11px;
+            color: #999;
+            margin-top: 3px;
+            text-align: right;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .memory-message-contributor {
+            font-weight: bold;
+            color: #777;
+        }
+
+        .memory-message[data-role="system"] {
+            border-left-color: #2196f3;
+        }
+
+        .memory-message[data-role="user"] {
+            border-left-color: #ff9800;
+        }
+
+        .memory-message[data-role="assistant"] {
+            border-left-color: #4caf50;
+        }
+
+        .memory-delta-indicator {
             font-size: 10px;
-            margin-right: 4px;
-            color: white;
+            background-color: #e8f5e9;
+            color: #388e3c;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 5px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .tab.active {
+            color: #4285f4;
+            border-bottom: 2px solid #4285f4;
         }
 
-        .agent-pill-orchestrator {
-            background-color: #0366d6;
+        .memory-message.highlight {
+            animation: highlight-background 2s ease-in-out;
         }
-
-        .agent-pill-planning {
-            background-color: #6f42c1;
+        
+        @keyframes highlight-background {
+            0% { background-color: #f9f9f9; }
+            30% { background-color: #e3f2fd; }
+            100% { background-color: #f9f9f9; }
         }
-
-        .agent-pill-swe {
-            background-color: #e36209;
+        
+        .agent-pill.highlight {
+            animation: highlight-agent 2s ease-in-out;
         }
-
-        .agent-pill-browser {
-            background-color: #28a745;
-        }
-
-        .agent-pill-terminal {
-            background-color: #d73a49;
-        }
-
-        .agent-pill-purchase {
-            background-color: #6f42c1;
-        }
-
-        .agent-pill-certificate {
-            background-color: #1b7e42;
-        }
-
-        .agent-pill-budget {
-            background-color: #2188ff;
-        }
-
-        .agent-pill-defects {
-            background-color: #cb2431;
+        
+        @keyframes highlight-agent {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.1); background-color: #bbdefb; }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
@@ -450,26 +517,27 @@
                     <span id="connection-status" class="status status-disconnected">Disconnected</span>
                 </div>
 
-                <div id="event-log" class="log-container"></div>
-            </div>
-        </div>
-
-        <div id="memory-panel" class="memory-panel">
-            <h3>Agent Memory</h3>
-
-            <div class="memory-section">
-                <div class="memory-header">
-                    <span>Shared Memory</span>
-                    <span id="shared-memory-badge" class="badge">Inactive</span>
+                <div class="panels-container">
+                    <div class="left-panel">
+                        <h3>Event Log</h3>
+                        <div id="event-log" class="log-container"></div>
+                    </div>
+                    
+                    <div class="right-panel">
+                        <h3>Memory Panel</h3>
+                        <div id="memory-panel" class="memory-panel">
+                            <div class="memory-header">Shared Memory State</div>
+                            <div class="memory-section">
+                                <div class="memory-section-title">Agent States</div>
+                                <div id="agent-states" class="agent-state-container"></div>
+                            </div>
+                            <div class="memory-section">
+                                <div class="memory-section-title">Shared Memory Messages</div>
+                                <div id="shared-memory"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div id="shared-memory" class="memory-content">
-                    <div class="memory-empty">No data available yet</div>
-                </div>
-            </div>
-
-            <div id="private-memories">
-                <!-- Private memory sections will be added dynamically -->
-                <div class="memory-empty">Waiting for agent data...</div>
             </div>
         </div>
     </div>
@@ -487,11 +555,23 @@
         const clearBtn = document.getElementById('clear-btn');
         const connectionStatus = document.getElementById('connection-status');
         const eventLog = document.getElementById('event-log');
+        const memoryPanel = document.getElementById('memory-panel');
+        const agentStatesContainer = document.getElementById('agent-states');
+        const sharedMemoryContainer = document.getElementById('shared-memory');
+        const tabs = document.querySelectorAll('.tab');
 
         // State variables
         let sessionId = null;
         let eventSource = null;
         let isConnected = false;
+        
+        // Memory state
+        const memoryState = {
+            agentStates: {},
+            activeAgent: null,
+            sharedMessages: [],
+            messageContributors: {}
+        };
 
         // Generate a random session ID
         function generateSessionId() {
@@ -510,6 +590,341 @@
             // Update status display
             connectionStatus.className = `status status-${status}`;
             connectionStatus.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+        
+        // Handle a memory update event
+        function handleMemoryUpdate(eventDetails) {
+            console.log('Memory update event:', eventDetails);
+            
+            // Debug - Check if this is shared or private memory
+            if (eventDetails.privateMemory) {
+                console.warn('PRIVATE MEMORY DETECTED IN UPDATE:', eventDetails);
+                return; // Skip private memory updates
+            }
+            
+            // Make sure we have a valid event
+            if (!eventDetails) {
+                console.error('Invalid memory update event: no details provided');
+                return;
+            }
+            
+            // Check if this is a delta update
+            if (eventDetails.delta) {
+                if (eventDetails.delta.type === 'private_memory_update') {
+                    console.warn('PRIVATE MEMORY DELTA DETECTED:', eventDetails.delta);
+                    return; // Skip private memory deltas
+                }
+                handleMemoryDelta(eventDetails);
+            } else if (eventDetails.type === 'memory_update') {
+                // Extract the actual memory data from event details
+                const memoryData = eventDetails.details || eventDetails;
+                
+                // Check for private memory
+                if (memoryData.privateMemory) {
+                    console.warn('PRIVATE MEMORY FOUND IN DETAILS:', memoryData);
+                    return; // Skip private memory updates
+                }
+                
+                // Check if this has shared memory data
+                if (memoryData.sharedMemory) {
+                    initializeMemoryPanel(memoryData);
+                } else if (memoryData.delta) {
+                    // Handle case where delta is nested in details
+                    if (memoryData.delta.type === 'private_memory_update') {
+                        console.warn('NESTED PRIVATE MEMORY DELTA DETECTED:', memoryData.delta);
+                        return; // Skip private memory deltas
+                    }
+                    handleMemoryDelta(memoryData);
+                }
+            } else {
+                // Legacy full state update
+                if (eventDetails.sharedMemory) {
+                    initializeMemoryPanel(eventDetails);
+                }
+            }
+        }
+        
+        // Handle a memory delta event
+        function handleMemoryDelta(eventDetails) {
+            console.log('PROCESSING MEMORY DELTA:', JSON.stringify(eventDetails, null, 2));
+            
+            // Skip private memory deltas
+            if (eventDetails.type === 'private_memory_update' || 
+                (eventDetails.target && eventDetails.target !== 'shared_memory')) {
+                console.log('Skipping private memory delta:', eventDetails);
+                return;
+            }
+            
+            const { type, delta, accessor, timestamp } = eventDetails;
+            console.log(`Delta type: ${type}, from: ${accessor}, timestamp: ${timestamp}`);
+            console.log('Delta content:', delta);
+            
+            const updateTime = new Date(timestamp).toLocaleTimeString();
+            
+            switch (type) {
+                case 'initialize':
+                    console.log('Initializing memory panel with:', delta);
+                    // Initialize memory panel with agent states
+                    if (delta.agentStates) {
+                        Object.entries(delta.agentStates).forEach(([agentId, state]) => {
+                            updateAgentState(agentId, state);
+                        });
+                    }
+                    
+                    // If we have messages, initialize them
+                    if (delta.messages && Array.isArray(delta.messages)) {
+                        memoryState.sharedMessages = delta.messages;
+                        renderSharedMemory();
+                    }
+                    
+                    // Store message contributors if available
+                    if (delta.messageContributors) {
+                        memoryState.messageContributors = delta.messageContributors;
+                    }
+                    
+                    // For a single agent registration
+                    if (delta.agentId && delta.state) {
+                        updateAgentState(delta.agentId, delta.state);
+                    }
+                    
+                    // Set active agent if specified
+                    if (delta.activeAgent) {
+                        memoryState.activeAgent = delta.activeAgent;
+                        renderAgentStates();
+                    }
+                    break;
+                    
+                case 'agent_state_updated':
+                    // Update a single agent's state
+                    if (delta.agentId && delta.state) {
+                        updateAgentState(delta.agentId, delta.state);
+                        
+                        // Log the state change
+                        const stateChangeMsg = {
+                            role: 'system',
+                            content: `Agent ${delta.agentId} state changed to ${delta.state}`,
+                            timestamp
+                        };
+                        addMessageToSharedMemory(stateChangeMsg, accessor);
+                    }
+                    break;
+                    
+                case 'message_added':
+                    // Add a new message to shared memory
+                    if (delta.message) {
+                        // Skip if this is for private memory
+                        if (delta.target === 'private_memory') {
+                            console.log('Skipping private memory message:', delta);
+                            return;
+                        }
+                        
+                        const { message, contributorId } = delta;
+                        addMessageToSharedMemory(message, contributorId || accessor);
+                    }
+                    break;
+                    
+                case 'active_agent_changed':
+                    // Update the active agent
+                    if (delta.agentId) {
+                        memoryState.activeAgent = delta.agentId;
+                        renderAgentStates();
+                        
+                        // Log the agent change
+                        const agentChangeMsg = {
+                            role: 'system',
+                            content: `Active agent changed to ${delta.agentId}`,
+                            timestamp
+                        };
+                        addMessageToSharedMemory(agentChangeMsg, accessor);
+                    }
+                    break;
+                    
+                case 'plan_updated':
+                case 'plan_step_updated':
+                    // Add plan update notification
+                    const planUpdateMsg = {
+                        role: 'system',
+                        content: type === 'plan_updated' 
+                            ? `Plan for task "${delta.taskId}" created with ${delta.steps?.length || 0} steps` 
+                            : `Step ${delta.stepIndex + 1} updated in plan "${delta.taskId}"`,
+                        timestamp
+                    };
+                    addMessageToSharedMemory(planUpdateMsg, accessor);
+                    break;
+                    
+                case 'agent_data_cleared':
+                    // Add agent data cleared notification
+                    const clearMsg = {
+                        role: 'system',
+                        content: `Data for agent ${delta.targetAgentId} cleared`,
+                        timestamp
+                    };
+                    addMessageToSharedMemory(clearMsg, accessor);
+                    
+                    // Remove agent from UI if it exists
+                    if (delta.targetAgentId) {
+                        delete memoryState.agentStates[delta.targetAgentId];
+                        renderAgentStates();
+                    }
+                    break;
+                    
+                default:
+                    console.log(`Unknown memory delta type: ${type}`);
+            }
+        }
+        
+        // Initialize the memory panel with full state
+        function initializeMemoryPanel(data) {
+            const { sharedMemory, activeAgent, accessor } = data;
+            
+            // Clear existing state
+            memoryState.agentStates = {};
+            memoryState.sharedMessages = [];
+            memoryState.activeAgent = activeAgent;
+            
+            // Set up agent states
+            if (sharedMemory?.agentStates) {
+                Object.entries(sharedMemory.agentStates).forEach(([agentId, state]) => {
+                    memoryState.agentStates[agentId] = state;
+                });
+            }
+            
+            // Set up shared messages
+            if (sharedMemory?.messages) {
+                memoryState.sharedMessages = sharedMemory.messages;
+            }
+            
+            // Render memory panel
+            renderMemoryPanel();
+        }
+        
+        // Update an agent's state and render
+        function updateAgentState(agentId, state) {
+            memoryState.agentStates[agentId] = state;
+            renderAgentStates();
+            
+            // Highlight the updated agent pill
+            setTimeout(() => {
+                const agentPills = document.querySelectorAll('.agent-pill');
+                agentPills.forEach(pill => {
+                    if (pill.textContent.trim().includes(agentId)) {
+                        pill.classList.add('highlight');
+                        setTimeout(() => {
+                            pill.classList.remove('highlight');
+                        }, 2000);
+                    }
+                });
+            }, 100);
+        }
+        
+        // Add a message to shared memory
+        function addMessageToSharedMemory(message, contributorId) {
+            memoryState.sharedMessages.push(message);
+            
+            // Store contributor info
+            const msgIndex = memoryState.sharedMessages.length - 1;
+            memoryState.messageContributors[msgIndex] = contributorId;
+            
+            // Render the updated shared memory
+            renderSharedMemory();
+            
+            // Highlight the most recent message
+            setTimeout(() => {
+                const messages = document.querySelectorAll('.memory-message');
+                if (messages.length > 0) {
+                    messages[0].classList.add('highlight');
+                    setTimeout(() => {
+                        messages[0].classList.remove('highlight');
+                    }, 2000);
+                }
+            }, 100);
+        }
+        
+        // Render the entire memory panel
+        function renderMemoryPanel() {
+            renderAgentStates();
+            renderSharedMemory();
+        }
+        
+        // Render agent states
+        function renderAgentStates() {
+            agentStatesContainer.innerHTML = '';
+            
+            Object.entries(memoryState.agentStates).forEach(([agentId, state]) => {
+                const isActive = agentId === memoryState.activeAgent;
+                const agentPill = document.createElement('div');
+                agentPill.className = `agent-pill ${isActive ? 'active' : ''}`;
+                
+                const stateClass = state.toLowerCase();
+                agentPill.innerHTML = `
+                    <span class="agent-state agent-state-${stateClass}"></span>
+                    ${agentId}
+                `;
+                
+                agentStatesContainer.appendChild(agentPill);
+            });
+        }
+        
+        // Render shared memory messages
+        function renderSharedMemory() {
+            sharedMemoryContainer.innerHTML = '';
+            
+            if (memoryState.sharedMessages.length === 0) {
+                sharedMemoryContainer.innerHTML = '<div class="memory-message">No messages in shared memory yet.</div>';
+                return;
+            }
+            
+            // Display most recent messages first (reverse order) - show ALL messages
+            [...memoryState.sharedMessages].reverse().forEach((msg, index) => {
+                const realIndex = memoryState.sharedMessages.length - 1 - index;
+                const contributor = memoryState.messageContributors[realIndex] || 'system';
+                const messageEl = createMessageElement(msg, contributor);
+                sharedMemoryContainer.appendChild(messageEl);
+            });
+        }
+        
+        // Create a message element
+        function createMessageElement(message, contributor) {
+            const container = document.createElement('div');
+            container.className = 'memory-message';
+            container.setAttribute('data-role', message.role || 'unknown');
+            
+            // Create role element
+            const roleEl = document.createElement('div');
+            roleEl.className = 'memory-message-role';
+            roleEl.textContent = message.role || 'unknown';
+            
+            // Create content element
+            const contentEl = document.createElement('div');
+            contentEl.className = 'memory-message-content';
+            contentEl.textContent = message.content || '';
+            
+            // Create metadata element
+            const metaEl = document.createElement('div');
+            metaEl.className = 'memory-message-meta';
+            
+            // Add timestamp
+            const timeEl = document.createElement('span');
+            const messageTime = message.timestamp 
+                ? new Date(message.timestamp).toLocaleTimeString() 
+                : '';
+            timeEl.textContent = messageTime;
+            
+            // Add contributor if available
+            const contributorEl = document.createElement('span');
+            contributorEl.className = 'memory-message-contributor';
+            if (contributor) {
+                contributorEl.textContent = `Added by: ${contributor}`;
+            }
+            
+            metaEl.appendChild(timeEl);
+            metaEl.appendChild(contributorEl);
+            
+            container.appendChild(roleEl);
+            container.appendChild(contentEl);
+            container.appendChild(metaEl);
+            
+            return container;
         }
 
         // Log an event to the event log
@@ -568,10 +983,14 @@
                         // Search for JSON_RESULTS comment
                         const jsonMatch = details.fullResult.match(/<!-- JSON_RESULTS: (.*?) -->/);
                         if (jsonMatch && jsonMatch[1]) {
-                            const parsedData = JSON.parse(jsonMatch[1]);
-                            if (parsedData.results && Array.isArray(parsedData.results)) {
-                                searchResults = parsedData.results;
-                                searchQuery = parsedData.query || 'search query';
+                            try {
+                                const parsedData = JSON.parse(jsonMatch[1]);
+                                if (parsedData.results && Array.isArray(parsedData.results)) {
+                                    searchResults = parsedData.results;
+                                    searchQuery = parsedData.query || 'search query';
+                                }
+                            } catch (e) {
+                                console.error('Error parsing JSON from comment:', e);
                             }
                         }
 
@@ -684,17 +1103,16 @@
             }
 
             // Create event content
-            const content = `
-                <div class="event-header">
-                    <div class="event-time">${time}</div>
-                    <div class="event-type event-type-${type}">${type.toUpperCase()}</div>
-                </div>
-                <div class="event-content">
-                    <div class="event-message">${message}</div>
-                    ${imageHtml}
-                    ${detailsHtml}
-                </div>
-            `;
+            let content = '';
+            content += '<div class="event-header">';
+            content += `<div class="event-time">${time}</div>`;
+            content += `<div class="event-type event-type-${type}">${type.toUpperCase()}</div>`;
+            content += '</div>';
+            content += '<div class="event-content">';
+            content += `<div class="event-message">${message}</div>`;
+            content += imageHtml;
+            content += detailsHtml;
+            content += '</div>';
 
             // Add content to event element
             eventEl.innerHTML = content;
@@ -704,6 +1122,11 @@
 
             // Scroll to bottom
             eventLog.scrollTop = eventLog.scrollHeight;
+
+            // Handle memory delta events specially
+            if (type === 'system' && details && details.type === 'memory_update') {
+                handleMemoryUpdate(details);
+            }
         }
 
         // Connect to the event stream
@@ -754,9 +1177,6 @@
             eventSource.addEventListener('open', () => {
                 updateConnectionUI('connected');
                 logEvent('system', 'Connected to event stream');
-
-                // Show placeholder memory data immediately on connection
-                createPlaceholderMemoryData();
             });
 
             eventSource.addEventListener('error', (e) => {
@@ -791,12 +1211,54 @@
                 logEvent('error', e.data.message, e.data.details);
             });
 
+            // Memory update events
+            eventSource.addEventListener('memory_update', (e) => {
+                try {
+                    let eventData;
+                    // Check if e.data is already an object or needs parsing
+                    if (typeof e.data === 'string') {
+                        eventData = JSON.parse(e.data);
+                    } else {
+                        eventData = e.data;
+                    }
+                    
+                    console.log('Memory update event received:', eventData);
+                    
+                    // Filter out private memory updates - only process shared memory events
+                    const isPrivateMemoryUpdate = 
+                        eventData.type === 'private_memory_update' || 
+                        (eventData.delta && eventData.delta.type === 'private_memory_update') ||
+                        eventData.privateMemory;
+                    
+                    if (isPrivateMemoryUpdate) {
+                        console.log('Ignoring private memory update:', eventData);
+                        logEvent('system', `Private memory update ignored`, eventData);
+                        return;
+                    }
+                    
+                    // Log and process only shared memory updates
+                    logEvent('system', `Shared memory update received`, eventData);
+                    
+                    // Make sure memory panel updates are reflected in the UI
+                    handleMemoryUpdate(eventData);
+                    
+                    // Force UI update
+                    renderMemoryPanel();
+                } catch (err) {
+                    console.error('Error parsing memory update event:', err, e.data);
+                    logEvent('error', `Error parsing memory update: ${err.message}`, { rawData: e.data });
+                }
+            });
+
             // Agent events
             eventSource.addEventListener('agent_thinking', (e) => {
+                // Only log to event log, don't add to shared memory
                 logEvent('agent', `${e.data.agent} thinking: ${e.data.message}`, e.data.details);
             });
 
             eventSource.addEventListener('agent_acting', (e) => {
+                // Only log to event log, don't add to shared memory
+                
                 // Check if this is a browser tool result with image data
                 const isBrowserToolResult =
                     e.data.details &&
@@ -824,6 +1286,7 @@
             });
 
             eventSource.addEventListener('agent_transition', (e) => {
+                // Only log to event log, don't add to shared memory
                 logEvent('agent', `Agent transition: ${e.data.message}`, e.data.details);
             });
 
@@ -853,24 +1316,12 @@
                 logEvent('browser', `Browser content extracted`, e.data.details);
             });
 
-            // Handle memory update events
-            eventSource.addEventListener('memory_update', (e) => {
-                console.log('Memory update event received:', e.data);
-                updateMemoryPanel(e.data.details);
-            });
-
             // Debug listener for all events
             eventSource.addEventListener('message', (e) => {
                 console.log('Raw SSE message received:', e);
                 try {
                     const eventData = JSON.parse(e.data);
                     console.log('Parsed event data:', eventData);
-
-                    // Check if this is a memory event that wasn't caught by specific handler
-                    if (eventData.type === 'memory_update') {
-                        console.log('Memory update from general handler:', eventData);
-                        updateMemoryPanel(eventData.details);
-                    }
                 } catch (err) {
                     console.error('Error parsing event data:', err);
                 }
@@ -938,238 +1389,6 @@
         disconnectBtn.addEventListener('click', disconnectEventStream);
         submitBtn.addEventListener('click', submitQuery);
         clearBtn.addEventListener('click', clearEventLog);
-
-        // Add the memory update handler
-        function updateMemoryPanel(memoryData) {
-            if (!memoryData) return;
-
-            // Update shared memory
-            updateSharedMemory(memoryData.sharedMemory, memoryData.accessor);
-
-            // Update private memories
-            updatePrivateMemories(memoryData.privateMemories, memoryData.activeAgent);
-        }
-
-        function updateSharedMemory(sharedMemory, accessor) {
-            const sharedMemoryElement = document.getElementById('shared-memory');
-            const sharedMemoryBadge = document.getElementById('shared-memory-badge');
-
-            // Update badge if being accessed
-            if (accessor) {
-                sharedMemoryBadge.textContent = `Accessed by ${accessor.toLowerCase()}`;
-                sharedMemoryBadge.className = 'badge badge-active';
-
-                // Reset badge after 2 seconds
-                setTimeout(() => {
-                    sharedMemoryBadge.textContent = 'Inactive';
-                    sharedMemoryBadge.className = 'badge';
-                }, 2000);
-            }
-
-            // Clear existing content
-            sharedMemoryElement.innerHTML = '';
-
-            // Check if there's data
-            if (!sharedMemory || Object.keys(sharedMemory).length === 0) {
-                sharedMemoryElement.innerHTML = '<div class="memory-empty">No data available yet</div>';
-                return;
-            }
-
-            // Add each memory item
-            for (const [key, value] of Object.entries(sharedMemory)) {
-                if (key.startsWith('_') || typeof value === 'function') continue;
-
-                const itemElement = document.createElement('div');
-                itemElement.className = 'memory-item';
-
-                const keyElement = document.createElement('div');
-                keyElement.className = 'memory-key';
-                keyElement.textContent = key;
-
-                const valueElement = document.createElement('div');
-                valueElement.className = 'memory-value';
-                valueElement.textContent = typeof value === 'object' ? JSON.stringify(value, null, 2) : value;
-
-                itemElement.appendChild(keyElement);
-                itemElement.appendChild(valueElement);
-
-                sharedMemoryElement.appendChild(itemElement);
-            }
-        }
-
-        function updatePrivateMemories(privateMemories, activeAgent) {
-            const privateMemoriesElement = document.getElementById('private-memories');
-
-            // Clear if no data
-            if (!privateMemories || Object.keys(privateMemories).length === 0) {
-                privateMemoriesElement.innerHTML = '<div class="memory-empty">No private memories available</div>';
-                return;
-            }
-
-            // Create or update each agent's memory section
-            for (const [agent, memory] of Object.entries(privateMemories)) {
-                const agentId = `private-memory-${agent}`;
-                let agentSection = document.getElementById(agentId);
-
-                // Create section if it doesn't exist
-                if (!agentSection) {
-                    agentSection = document.createElement('div');
-                    agentSection.id = agentId;
-                    agentSection.className = 'memory-section';
-
-                    const headerElement = document.createElement('div');
-                    headerElement.className = 'memory-header';
-
-                    const titleElement = document.createElement('span');
-                    titleElement.textContent = `${agent.charAt(0).toUpperCase() + agent.slice(1)} Memory`;
-
-                    const badgeElement = document.createElement('span');
-                    badgeElement.id = `${agentId}-badge`;
-                    badgeElement.className = 'badge';
-                    badgeElement.textContent = 'Inactive';
-
-                    headerElement.appendChild(titleElement);
-                    headerElement.appendChild(badgeElement);
-
-                    const contentElement = document.createElement('div');
-                    contentElement.id = `${agentId}-content`;
-                    contentElement.className = 'memory-content';
-
-                    agentSection.appendChild(headerElement);
-                    agentSection.appendChild(contentElement);
-
-                    privateMemoriesElement.appendChild(agentSection);
-                }
-
-                // Update active status
-                const badgeElement = document.getElementById(`${agentId}-badge`);
-                if (badgeElement) {
-                    if (activeAgent && activeAgent.toLowerCase() === agent.toLowerCase()) {
-                        badgeElement.textContent = 'Active';
-                        badgeElement.className = 'badge badge-active';
-                    } else {
-                        badgeElement.textContent = 'Inactive';
-                        badgeElement.className = 'badge';
-                    }
-                }
-
-                // Update content
-                const contentElement = document.getElementById(`${agentId}-content`);
-                if (contentElement) {
-                    contentElement.innerHTML = '';
-
-                    if (!memory || Object.keys(memory).length === 0) {
-                        contentElement.innerHTML = '<div class="memory-empty">No data available</div>';
-                    } else {
-                        for (const [key, value] of Object.entries(memory)) {
-                            if (key.startsWith('_') || typeof value === 'function') continue;
-
-                            const itemElement = document.createElement('div');
-                            itemElement.className = 'memory-item';
-
-                            const keyElement = document.createElement('div');
-                            keyElement.className = 'memory-key';
-                            keyElement.textContent = key;
-
-                            const valueElement = document.createElement('div');
-                            valueElement.className = 'memory-value';
-                            valueElement.textContent = typeof value === 'object' ? JSON.stringify(value, null, 2) : value;
-
-                            itemElement.appendChild(keyElement);
-                            itemElement.appendChild(valueElement);
-
-                            contentElement.appendChild(itemElement);
-                        }
-                    }
-                }
-            }
-        }
-
-        function handleEvent(event) {
-            console.log('Event received:', event);
-
-            try {
-                const data = JSON.parse(event);
-                const typeName = data.type?.toLowerCase() || 'unknown';
-
-                console.log(`Handling event of type: ${typeName}`);
-
-                // Handle memory update events immediately
-                if (typeName === 'memory_update') {
-                    console.log('Memory update event detected in handleEvent:', data);
-                    updateMemoryPanel(data.details);
-                    return; // Don't add to event log
-                }
-
-                // Create event entry
-                const eventItem = document.createElement('div');
-                eventItem.className = `event-item ${typeName}-event`;
-
-                // Handle different event types
-                if (typeName === 'agent_thinking' || typeName === 'agent_message') {
-                    handleAgentEvent(eventItem, data);
-                } else if (typeName === 'tool_call') {
-                    handleToolCall(eventItem, data);
-                } else if (typeName === 'tool_result') {
-                    handleToolResult(eventItem, data);
-                } else if (typeName === 'search_result') {
-                    handleSearchResult(eventItem, data);
-                } else {
-                    // Generic event handler
-                    const title = document.createElement('div');
-                    title.className = 'event-title';
-                    title.textContent = `${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`;
-
-                    const content = document.createElement('pre');
-                    content.className = 'event-content';
-                    content.textContent = JSON.stringify(data, null, 2);
-
-                    eventItem.appendChild(title);
-                    eventItem.appendChild(content);
-                }
-
-                // Add to log
-                const eventLog = document.getElementById('event-log');
-                eventLog.appendChild(eventItem);
-                eventLog.scrollTop = eventLog.scrollHeight;
-            } catch (error) {
-                console.error('Error parsing event:', error);
-            }
-        }
-
-        // Create and display placeholder memory data
-        function createPlaceholderMemoryData() {
-            console.log('Creating placeholder memory data');
-
-            // Basic placeholder data
-            const placeholderData = {
-                type: 'connection_established',
-                sharedMemory: {
-                    'status': 'Connected and ready',
-                    'sessionId': sessionId
-                },
-                privateMemories: {
-                    'orchestrator': {
-                        'status': 'Ready',
-                        'role': 'Coordinating agents and managing workflow'
-                    },
-                    'browser': {
-                        'status': 'Ready',
-                        'role': 'Searching the web and navigating sites'
-                    },
-                    'planning': {
-                        'status': 'Ready',
-                        'role': 'Creating plans and coordinating execution'
-                    }
-                },
-                activeAgent: 'orchestrator',
-                accessor: null,
-                timestamp: Date.now()
-            };
-
-            // Display the placeholder data
-            updateMemoryPanel(placeholderData);
-        }
     </script>
 </body>
 

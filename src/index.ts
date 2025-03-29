@@ -14,6 +14,7 @@ export { SWEAgent } from './agent/swe';
 
 // Memory
 export { AgentMemory, type Message } from './agent/memory';
+export { SharedMemory, MemoryDelta, MemoryEventType } from './agent/shared-memory';
 
 // Tools
 export {

@@ -45,6 +45,8 @@ const LoggingConfigSchema = z.object({
     .int()
     .positive()
     .default(10 * 1024 * 1024), // 10MB
+  memory_logging: z.boolean().default(false),
+  memory_log_path: z.string().default(path.join(LOGS_PATH, 'memory')),
 });
 
 const AgentConfigSchema = z.object({
@@ -97,6 +99,8 @@ const defaultConfig: Config = {
     log_path: LOGS_PATH,
     max_files: 5,
     max_size: 10 * 1024 * 1024,
+    memory_logging: false,
+    memory_log_path: path.join(LOGS_PATH, 'memory'),
   },
   sandbox: {
     enabled: true,

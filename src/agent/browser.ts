@@ -139,6 +139,12 @@ export class BrowserAgent extends ToolCallAgent {
     this.sharedMemory = sharedMemory;
     this.privateMemory = privateMemory;
 
+    // Pass event handler to shared memory if it exists
+    if (options.eventHandler && sharedMemory && 
+        typeof sharedMemory.setEventHandler === 'function') {
+      sharedMemory.setEventHandler(options.eventHandler);
+    }
+
     // Store special tools that should trigger termination
     this.specialToolNames = ['terminate'];
 
@@ -313,40 +319,6 @@ export class BrowserAgent extends ToolCallAgent {
   }
 
   /**
-   * Emit a memory update event
-   */
-  private emitMemoryEvent(type: string): void {
-    if (this.eventHandler && typeof this.eventHandler === 'function') {
-      try {
-        // Create simplified memory snapshot for the event
-        const memorySnapshot = {
-          sharedMemory: this.sharedMemory ? { 
-            // Only include the messages which are definitely public
-            messages: this.sharedMemory.messages.slice(-5), // Last 5 messages for brevity
-          } : {},
-          privateMemory: {
-            messages: this.memory.messages.slice(-5), // Last 5 messages for brevity
-          },
-          activeAgent: AgentType.BROWSER,
-          accessor: AgentType.BROWSER,
-          timestamp: Date.now(),
-        };
-
-        // Emit the memory event
-        this.eventHandler({
-          type: 'memory_update',
-          agent: AgentType.BROWSER,
-          state: 'running',
-          message: `Memory ${type}`,
-          details: memorySnapshot,
-        });
-      } catch (error) {
-        log.error(`Error emitting memory event: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-  }
-
-  /**
    * Execute the research task with a simple think-act loop
    */
   async executeResearch(taskDescription: string, context: string = ''): Promise<string> {
@@ -373,15 +345,32 @@ export class BrowserAgent extends ToolCallAgent {
       When you have sufficient information, use the terminate tool with your final reasoning.`
     });
     
+    // Update shared memory if available to show that browser agent is working on a task
+    if (this.sharedMemory) {
+      // Register browser agent if not already registered
+      this.sharedMemory.registerAgent(AgentType.BROWSER, AgentState.RUNNING, {
+        name: 'Browser Agent',
+        role: 'Web researcher',
+        currentTask: taskDescription
+      });
+      
+      // Add research task to shared memory
+      this.sharedMemory.addMessageWithContributor(
+        {
+          role: 'user',
+          content: `Researching: ${taskDescription}`,
+          timestamp: Date.now(),
+        },
+        AgentType.BROWSER
+      );
+    }
+    
     // Track state
     let stepCount = 0;
     const maxSteps = this.maxSteps || 15;
     let finalReasoning: string | null = null;
     
     try {
-      // Emit initial memory state
-      this.emitMemoryEvent('initialized');
-      
       // Simple think-act loop until termination or max steps
       while (stepCount < maxSteps) {
         stepCount++;
@@ -390,14 +379,12 @@ export class BrowserAgent extends ToolCallAgent {
         // Think
         await this.think();
         
-        // Emit memory update after thinking
-        this.emitMemoryEvent('updated_after_thinking');
-        
         // Act
-        await this.act();
+        const actionResult = await this.act();
         
-        // Emit memory update after acting
-        this.emitMemoryEvent('updated_after_acting');
+        // REMOVED: No longer add intermediate steps to shared memory
+        // Just log the action result locally
+        log.info(`Browser research step ${stepCount}: ${actionResult?.substring(0, 100)}...`);
         
         // Check if termination was called
         if (this.hasTerminateToolCall()) {
@@ -444,9 +431,6 @@ export class BrowserAgent extends ToolCallAgent {
         
         // Update agent state
         this.sharedMemory.updateAgentState(AgentType.BROWSER, AgentState.IDLE);
-        
-        // Emit memory update after final update
-        this.emitMemoryEvent('final_synthesis_completed');
       }
       
       return finalReasoning;
@@ -467,9 +451,6 @@ export class BrowserAgent extends ToolCallAgent {
         );
         
         this.sharedMemory.updateAgentState(AgentType.BROWSER, AgentState.ERROR);
-        
-        // Emit memory update on error
-        this.emitMemoryEvent('error_occurred');
       }
       
       throw error;
